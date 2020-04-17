@@ -79,6 +79,7 @@ def get_sheetinfo(args):
 			np.logical_or.reduce([full_sheet['TRAINING'] == g for g in gains]) &
 				 np.logical_or.reduce([full_sheet['STEP LENGTH'] == l for l in step_lengths]) &
 					(full_sheet['Notes'].str.contains('messy', case = False) != 1)].loc[:,colstart:colend]
+	#########
 	if '-sines' in args:
 		sheetname = 'Sines All'
 	sheetinfo = SheetInfo(sheet, sheetname)
