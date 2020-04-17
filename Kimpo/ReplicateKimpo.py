@@ -79,6 +79,7 @@ def get_sheetinfo(args):
 			np.logical_or.reduce([full_sheet['TRAINING'] == g for g in gains]) &
 				 np.logical_or.reduce([full_sheet['STEP LENGTH'] == l for l in step_lengths]) &
 					(full_sheet['Notes'].str.contains('messy', case = False) != 1)].loc[:,colstart:colend]
+	#########
 	if '-sines' in args:
 		sheetname = 'Sines All'
 	sheetinfo = SheetInfo(sheet, sheetname)
@@ -100,14 +101,14 @@ def get_cells(mid, sheetinfo, args):
 		return cells
 
 def get_session_list(sheetinfo):
-	if os.path.exists("../pythonfiles/session_file_list.pyc"):
-		return pickle.load(open("../pythonfiles/session_file_list.pyc", "rb"))
+	if os.path.exists("../../pythonfiles/session_file_list.pyc"):
+		return pickle.load(open("../../pythonfiles/session_file_list.pyc", "rb"))
 	session_list = []
-	pyfiles = os.listdir('../pythonfiles')
+	pyfiles = os.listdir('../../pythonfiles')
 	for file in pyfiles:
 		if ".pyc" not in file: continue
 		session_list.append(file.replace(".pyc", ""))
-	pickle.dump(session_list, open("../pythonfiles/session_file_list.pyc", "wb"))
+	pickle.dump(session_list, open("../../pythonfiles/session_file_list.pyc", "wb"))
 	return session_list
 
 def get_ssfrlis(ss_channel, sample_rate):
@@ -214,8 +215,8 @@ def create_session_objs(sheetinfo, sessionmap):
 	sessionkeys = sessionmap.keys()
 	sessionObjects = []
 	for s, sessionkey in enumerate(sessionkeys):
-		if not os.path.exists("../pythonfiles/" + sessionkey + ".pyc"): continue
-		session_data = pickle.load(open("../pythonfiles/" + sessionkey + ".pyc", "rb"))
+		if not os.path.exists("../../pythonfiles/" + sessionkey + ".pyc"): continue
+		session_data = pickle.load(open("../../pythonfiles/" + sessionkey + ".pyc", "rb"))
 		trial_starts = get_trial_starts(sheetinfo, sessionkey, session_data)
 		ss_channel = get_channel(session_data, "ss")
 		sample_rate = get_channel(session_data, "hevel").samplerate
