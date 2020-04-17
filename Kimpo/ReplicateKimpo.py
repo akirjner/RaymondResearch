@@ -18,7 +18,7 @@ TRIAL_LENGTHS = ['250 ms', '500 ms', '1000 ms']
 
 #Can be replaced in the future with cloud storage, local for now
 #############################################################################
-py_files = "/Users/andrewkirjner/Desktop/Andrew/RaymondLab/pythonfiles/"
+py_files_path = "/Users/andrewkirjner/Desktop/Andrew/RaymondDataFiles/pythonfiles/"
 ##############################################################################
 
 
@@ -107,14 +107,14 @@ def get_cells(mid, sheetinfo, args):
 		return cells
 
 def get_session_list(sheetinfo):
-	if os.path.exists(py_files + "session_file_list.pyc"):
-		return pickle.load(open(py_files + "session_file_list.pyc", "rb"))
+	if os.path.exists(py_files_path + "session_file_list.pyc"):
+		return pickle.load(open(py_files_path + "session_file_list.pyc", "rb"))
 	session_list = []
-	pyfiles = os.listdir(py_files)
+	pyfiles = os.listdir(py_files_path)
 	for file in pyfiles:
 		if ".pyc" not in file: continue
 		session_list.append(file.replace(".pyc", ""))
-	pickle.dump(session_list, open(py_files + "session_file_list.pyc", "wb"))
+	pickle.dump(session_list, open(py_files_path + "session_file_list.pyc", "wb"))
 	return session_list
 
 def get_ssfrlis(ss_channel, sample_rate):
@@ -221,8 +221,8 @@ def create_session_objs(sheetinfo, sessionmap):
 	sessionkeys = sessionmap.keys()
 	sessionObjects = []
 	for s, sessionkey in enumerate(sessionkeys):
-		if not os.path.exists(py_files + sessionkey + ".pyc"): continue
-		session_data = pickle.load(open(py_files + sessionkey + ".pyc", "rb"))
+		if not os.path.exists(py_files_path + sessionkey + ".pyc"): continue
+		session_data = pickle.load(open(py_files_path + sessionkey + ".pyc", "rb"))
 		trial_starts = get_trial_starts(sheetinfo, sessionkey, session_data)
 		ss_channel = get_channel(session_data, "ss")
 		sample_rate = get_channel(session_data, "hevel").samplerate

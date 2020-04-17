@@ -5,19 +5,19 @@ import sys
 
 #Can be replaced in the future with cloud storage, local for now
 #############################################################################
-all_files = "/Users/andrewkirjner/Desktop/Andrew/RaymondLab/allfiles/"
-py_files = "/Users/andrewkirjner/Desktop/Andrew/RaymondLab/pythonfiles/"
+mat_files_path = "/Users/andrewkirjner/Desktop/Andrew/RaymondDataFiles/matlabfiles/"
+py_files_path = "/Users/andrewkirjner/Desktop/Andrew/RaymondDataFiles/pythonfiles/"
 ##############################################################################
 
 
-matfiles = sorted(os.listdir(all_files))
+matfiles = sorted(os.listdir(mat_files_path))
 
 for m, matfile in enumerate(matfiles):
 	if ".mat" not in matfile: continue
-	python_filename = py_files + matfile.replace(".mat", ".pyc")	
+	python_filename = py_files_path + matfile.replace(".mat", ".pyc")	
 	#if os.path.exists(python_filename): continue
 	print(matfile)
-	file_behavior_data = Objects.BehaviorData(all_files + matfile)
+	file_behavior_data = Objects.BehaviorData(mat_files_path + matfile)
 	pickle.dump(file_behavior_data, open(python_filename, 'wb'))
 
 
