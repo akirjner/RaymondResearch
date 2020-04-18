@@ -164,7 +164,7 @@ def make_scatter_line_trace(session, trace_name, numcells, sheetinfo, plot_param
 			x = trials,
 	 		y = best_fit, 
 	 		mode = 'lines', 
-	 		name = "Slope = " + str(round(session.slope, 4)) + "\n" + session.pvalue
+	 		name = "Slope = " + str(round(session.slope, 4)) + "\n" + str(session.pvalue)
 	 	)
 		
 	else:
@@ -177,25 +177,16 @@ def make_scatter_line_trace(session, trace_name, numcells, sheetinfo, plot_param
 			opacity = 0.5, 
 			marker = dict(symbol = symbol, color = color, opacity = 0.75), 
 			line = dict(dash = 'dot', color = color),
-			showlegend = False if "bymonkey" in plot_params else True,
+			showlegend = True,
 			hoverinfo = 'x+y'
 		)
 		
-		showline = True
-		if "bymonkey" in plot_params:
-			cell = session.cell if session.monkey == "Edison" else session.cell[1:]
-			cell_num = (sheetinfo.uniquecells == cell).argmax()
-			if cell_num % numcells + 1 != 1:
-				showline = False
-			if session.gain == 'x0' and session.tlength.keys()[0] == "1000 ms" and cell == "E32-2": #Special Case
-				showline = True
 		line_trace = go.Scatter(
 			x = trials,
  			y = best_fit, 
  			mode = 'lines', 
  			line = dict(color = color), 
- 			name =  "m" + label  + (" = " + str(round(session.slope, 3)) + ", p = " + str(round(session.pvalue, 3)) if "bymonkey" not in plot_params else ""),
- 			showlegend = showline,
+ 			name =  "m" + label  + (" = " + str(round(session.slope, 3)) + ", p = " + str(round(session.pvalue, 3))),
  			hoverinfo = 'name',
  			hoverlabel = dict(namelength = -1),
 
@@ -252,9 +243,8 @@ def add_traces(fig,sessions, sheetinfo, numcells, plot_params):
 		return add_one_plot_traces(fig, sessions, sheetinfo)
 	trace_names = []
 	average_plot = {}
-	overlay = any(["overlay" in param for param in plot_params])
 	for session in sessions:
-		trace_name = (session.cell if "bymonkey" not in plot_params else session.monkey, session.tlength.keys()[0], session.gain)
+		trace_name = (session.cell, session.tlength.keys()[0], session.gain)
 		scatter_trace, line_trace = make_scatter_line_trace(session, trace_name, numcells, sheetinfo, plot_params)
 		if len(plot_params) == 0:
 			fig.add_trace(scatter_trace)
@@ -262,19 +252,7 @@ def add_traces(fig,sessions, sheetinfo, numcells, plot_params):
 		else:
 			plot_row = 0
 			plot_col = 0
-			if "bymonkey" in plot_params:
-				cell = session.cell if session.monkey == "Edison" else session.cell[1:]
-				cell_num = (sheetinfo.uniquecells == cell).argmax()
-				plot_row = 1
-				plot_col = cell_num % numcells + 1
-				if overlay:
-					fig.append_trace(scatter_trace, 1, plot_col)
-					fig.append_trace(line_trace, 1, plot_col)
-				elif "comparelengths" in plot_params:
-					plot_row = session.tlength[session.tlength.keys()[0]] + 1
-				elif "comparegains" in plot_params:
-					plot_row = 1 if session.gain == 'x2' else 2			
-			elif "allconditions" in plot_params:
+			if "allconditions" in plot_params:
 				if session.gain == 'x2':
 					plot_row = 1
 				else:
@@ -285,7 +263,7 @@ def add_traces(fig,sessions, sheetinfo, numcells, plot_params):
 					plot_col = 2
 				elif session.tlength.keys()[0] == '1000 ms':
 					plot_col = 3
-			elif not overlay:
+			else:
 				plot_row = 1
 				if "comparelengths" in plot_params:
 					plot_col = session.tlength[session.tlength.keys()[0]] + 1
@@ -309,7 +287,6 @@ def add_traces(fig,sessions, sheetinfo, numcells, plot_params):
 #Fix This Mess
 def get_annotations(fig, name, sheetinfo, plot_params, average_plot_names = None):
 	annotations = []
-	overlay = any(["overlay" in param for param in plot_params])
 	plot_names = []
 	if average_plot_names != None:
 		for n, name in enumerate(average_plot_names):
@@ -326,53 +303,6 @@ def get_annotations(fig, name, sheetinfo, plot_params, average_plot_names = None
 					text = name, 
 					showarrow = False)
 			annotations.append(note)
-		return annotations
-	if "bymonkey" in plot_params:
-		cells = list(sheetinfo.uniquecells)
-		numcells_each = len(cells)/2
-		if name[0] == "Darwin":
-			cells = ["D" + str(cells[i]) for i in range(numcells_each)]
-		else:
-			cells = [str(cells[i]) for i in range(numcells_each, len(cells))]
-		if overlay:
-			for i in range(len(cells)):
-				title_xcoord = (fig['layout']['xaxis' + str(i+1)]['domain'][0] + fig['layout']['xaxis' + str(i+1)]['domain'][1])/2
-				title_ycoord = fig['layout']['yaxis' + str(i+1)]['domain'][1]
-				note = dict(
-						font = dict(size = 14), 
-						xref = "paper", 
-						yref = "paper", 
-						xanchor = "center", 
-						yanchor = "bottom",
-						x = title_xcoord,
-						y = title_ycoord,
-						text = plot_names[i], 
-						showarrow = False)
-				annotations.append(note)
-		else:
-			plot_names = []
-			if "comparegains" in plot_params:
-				gain_names = [' Gain Up (x2) Ipsi', ' Gain Down (x0) Contra']
-				if "oppside" in plot_params:
-					gain_names = [' Gain Up (x2) Contra', ' Gain Down (x0) Ipsi']
-				plot_names = [cells[i] + gain_names[j] for j in range(len(gain_names)) for i in range(len(cells))]
-			elif "comparelengths" in plot_params:
-				length_names = [" 250 ms", " 500 ms", " 1000 ms"]
-				plot_names = [cells[i] + length_names[j] for j in range(len(length_names)) for i in range(len(cells))]
-			for i in range(len(plot_names)):
-				title_xcoord = (fig['layout']['xaxis' + str(i+1)]['domain'][0] + fig['layout']['xaxis' + str(i+1)]['domain'][1])/2
-				title_ycoord = fig['layout']['yaxis' + str(i+1)]['domain'][1]
-				note = dict(
-						font = dict(size = 14), 
-						xref = "paper", 
-						yref = "paper", 
-						xanchor = "center", 
-						yanchor = "bottom",
-						x = title_xcoord,
-						y = title_ycoord,
-						text = plot_names[i], 
-						showarrow = False)
-				annotations.append(note)
 	elif "allconditions" in plot_params:
 		annotations = []
 		plot_names = []
@@ -395,7 +325,7 @@ def get_annotations(fig, name, sheetinfo, plot_params, average_plot_names = None
 					text = plot_names[i], 
 					showarrow = False)
 			annotations.append(note)
-	elif not overlay:
+	else:
 		plot_names = []
 		if "comparelengths" in plot_params:
 			plot_names = ["250 ms Trials", "500 ms Trials", "1000 ms Trials"]
@@ -549,41 +479,21 @@ def get_names(sessions, plot_params):
 			dropdown_names = sorted(list(set([session.cell for session in sessions])))
 			filename = filename + "allconditions-by-cell"
 	 	elif "comparelengths" in plot_params and "comparegains" in plot_params:
-	 		if "bymonkey" in plot_params:
-	 			dropdown_names = sorted(unique([session.monkey for session in sessions]))
-	 			filename = "compare-lengths-and-gains-by-monkey"
-	 		else:
-	 			dropdown_names = sorted(unique([session.cell for session in sessions]))
-	 			filename = "compare-lengths-and-gains-by-cell"
-	 		if any(["overlay" in param for param in plot_params]):
-	 			filename = filename + "-overlay"
-	 			if "overlay-gains" in plot_params:
-	 				filename = filename + "-gains"
-	 			if "overlay-lengths" in plot_params:
-	 				filename = filename + "-lengths"
+ 			dropdown_names = sorted(unique([session.cell for session in sessions]))
+ 			filename = "compare-lengths-and-gains-by-cell"
 	 	elif "comparelengths" in plot_params:
-	 		if "bymonkey" in plot_params:
-	 			dropdown_names = list(set([(session.monkey, session.gain) for session in sessions]))
-	 			filename = "compare-lengths-by-monkey"
-	 		else:
-				dropdown_names = list(set([(session.cell, session.gain) for session in sessions]))
-				filename = "compare-lengths-by-cell"
-				average_plot_names = length_names
+			dropdown_names = list(set([(session.cell, session.gain) for session in sessions]))
+			filename = "compare-lengths-by-cell"
+			average_plot_names = length_names
 			dropdown_names.sort(key = lambda x: (x[0], -int(x[1][1])))
-			if "overlay-lengths" in plot_params:
-				filename = filename + "-overlay"
+
 		elif "comparegains" in plot_params:
-			if "bymonkey" in plot_params:
-				dropdown_names = list(set([(session.monkey, session.tlength.keys()[0], session.tlength[session.tlength.keys()[0]]) for session in sessions]))
-				filename = "compare-gains-by-monkey"
-			else:
-				average_plot_names = gain_names
-				dropdown_names = list(set([(session.cell, session.tlength.keys()[0], session.tlength[session.tlength.keys()[0]]) for session in sessions]))	
-				filename = "compare-gains-by-cell"
+			average_plot_names = gain_names
+			dropdown_names = list(set([(session.cell, session.tlength.keys()[0], session.tlength[session.tlength.keys()[0]]) for session in sessions]))	
+			filename = "compare-gains-by-cell"
 			dropdown_names.sort(key = lambda x: (x[0], x[2]))
 			dropdown_names = [(name[0], name[1]) for name in dropdown_names]
-			if "overlay-gains" in plot_params:
-				filename = filename + "-overlay"
+
 	return dropdown_names, average_plot_names, filename
 
 def set_fig_dimensions(filename, numcells_each, plot_params):
@@ -591,7 +501,7 @@ def set_fig_dimensions(filename, numcells_each, plot_params):
 	numrows = 1
 	numcols = 1
 	plot_height = 650
-	if filename == "default" or filename == "one-plot-summaries" or ("by-cell" in filename and "-overlay" in filename):
+	if filename == "default" or filename == "one-plot-summaries":
 		return fig, plot_height	
 	if "by-cell" in filename:
 		if "allconditions" in filename:
@@ -605,9 +515,7 @@ def set_fig_dimensions(filename, numcells_each, plot_params):
 		 	numrows = 1
 		 	numcols = 2
 	elif "by-monkey" in filename:
-		if "-overlay" in filename:
-		 	numrows = 1
-		elif "compare-lengths" in filename:
+		if "compare-lengths" in filename:
 		 	numrows = 3
 		 	plot_height = 850
 		elif "compare-gains" in filename:
