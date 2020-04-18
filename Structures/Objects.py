@@ -19,11 +19,11 @@ class SessionInfo():
 		self.monkey = sessioninfolist[0]
 		self.cell = sessioninfolist[1] if self.monkey == "Edison" else self.monkey[0] + sessioninfolist[1]
 		self.gain = sessioninfolist[2] 
-		self.tlength = {sessioninfolist[3] : 0}
+		self.tlength = (sessioninfolist[3], 0)
 		if sessioninfolist[3] == '500 ms':
-			self.tlength = {sessioninfolist[3]: 1}
+			self.tlength = (sessioninfolist[3], 1)
 		elif sessioninfolist[3] == '1000 ms':
-			self.tlength = {sessioninfolist[3] : 2}
+			self.tlength = (sessioninfolist[3], 2) 
 		self.slope = sessioninfolist[7]
 		self.pvalue = sessioninfolist[9]
 		self.tvalue = sessioninfolist[10]

@@ -17,18 +17,15 @@ TRIAL_LENGTHS = ['250 ms', '500 ms', '1000 ms']
 
 
 #Can be replaced in the future with cloud storage, local for now
-#############################################################################
+##################################################################################
 py_files_path = "/Users/andrewkirjner/Desktop/Andrew/RaymondDataFiles/pythonfiles/"
-##############################################################################
+#################################################################################
 
 
 class Monkeys(IntEnum):
 	BOTH = 0
 	DARWIN = 1
 	EDISON = 2
-
-
-
 	
 def get_channel(session_data, chan_name):
 	channels = session_data.channels
