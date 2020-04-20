@@ -9,10 +9,10 @@ from plotly import subplots
 import plot_utils as pltutils
 
 GAINS = ['x2', 'x0']
-GAIN_NAMES = ['Gain Up (x2) Ipsi', 'Gain Down (x0) Contra']
-GAIN_NAMES_OPP = ['Gain Up (x2) Contra', 'Gain Down (x0) Ipsi']
+GAIN_NAMES = [' Gain Up (x2) Ipsi', ' Gain Down (x0) Contra']
+GAIN_NAMES_OPP = [' Gain Up (x2) Contra', ' Gain Down (x0) Ipsi']
 COLORS = ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02']
-LENGTHS = ['250 ms', '500 ms', '1000 ms']
+LENGTHS = [' 250 ms', ' 500 ms', ' 1000 ms']
 SYMBOLS = ['circle', 'square', 'triangle-up']
 
 
@@ -122,101 +122,45 @@ def add_traces(fig,sessions, sheetinfo, plot_params):
 	return trace_names
 
 
-#Fix This Mess
+def get_plot_names(name, plot_params, average_plot_names):
+	if average_plot_names != None:
+		return average_plot_names
+	gain_names = GAIN_NAMES if "oppside" in plot_params else GAIN_NAMES_OPP
+	length_names = LENGTHS
+	if "allconditions" in plot_params:
+		return [name + length_names[j] + gain_names[i] for i in range(len(gain_names)) for j in range(len(length_names))]
+	elif "comparelengths" in plot_params:
+		return length_names
+	elif "comparegains" in plot_params:
+		return gain_names
+
 def get_annotations(fig, name, sheetinfo, plot_params, average_plot_names = None):
 	annotations = []
-	plot_names = []
-	if average_plot_names != None:
-		print(average_plot_names)
-		for n, name in enumerate(average_plot_names):
-			title_xcoord = (fig['layout']['xaxis' + str(n+1)]['domain'][0] + fig['layout']['xaxis' + str(n+1)]['domain'][1])/2
-			title_ycoord = fig['layout']['yaxis' + str(n+1)]['domain'][1]
-			note = dict(
-					font = dict(size = 14), 
-					xref = "paper", 
-					yref = "paper", 
-					xanchor = "center", 
-					yanchor = "bottom",
-					x = title_xcoord,
-					y = title_ycoord,
-					text = name, 
-					showarrow = False)
-			annotations.append(note)
-	elif "allconditions" in plot_params:
-		annotations = []
-		plot_names = []
-		gain_names = [' Gain Up (x2) Ipsi', ' Gain Down (x0) Contra']
-		if "oppside" in plot_params:
-			gain_names = [' Gain Up (x2) Contra', ' Gain Down (x0) Ipsi']
-		length_names = [" 250 ms", " 500 ms", " 1000 ms"]
-		plot_names = [name + length_names[j] + gain_names[i] for i in range(len(gain_names)) for j in range(len(length_names))]
-		for i in range(len(plot_names)):
-			title_xcoord = (fig['layout']['xaxis' + str(i+1)]['domain'][0] + fig['layout']['xaxis' + str(i+1)]['domain'][1])/2
-			title_ycoord = fig['layout']['yaxis' + str(i+1)]['domain'][1]
-			note = dict(
-					font = dict(size = 14), 
-					xref = "paper", 
-					yref = "paper", 
-					xanchor = "center", 
-					yanchor = "bottom",
-					x = title_xcoord,
-					y = title_ycoord,
-					text = plot_names[i], 
-					showarrow = False)
-			annotations.append(note)
-	else:
-		plot_names = []
-		if "comparelengths" in plot_params:
-			plot_names = ["250 ms Trials", "500 ms Trials", "1000 ms Trials"]
-		elif "comparegains" in plot_params:
-			if "oppside" not in plot_params:
-				plot_names = ['Gain Up (x2) Ipsiversive Trials', 'Gain Down (x0) Contraversive Trials']	
-			else:
-				plot_names = ['Gain Up (x2) Contraversive Trials', 'Gain Down (x0) Ipsiversive Trials']
-		for i in range(len(plot_names)):
-			title_xcoord = (fig['layout']['xaxis' + str(i+1)]['domain'][0] + fig['layout']['xaxis' + str(i+1)]['domain'][1])/2
-			title_ycoord = fig['layout']['yaxis' + str(i+1)]['domain'][1]
-			note = dict(
-					font = dict(size = 14), 
-					xref = "paper", 
-					yref = "paper", 
-					xanchor = "center", 
-					yanchor = "bottom",
-					x = title_xcoord,
-					y = title_ycoord,
-					text = plot_names[i], 
-					showarrow = False)
-			annotations.append(note)
+	plot_names = get_plot_names(name, plot_params, average_plot_names)
+	for n, name in enumerate(plot_names):
+		title_xcoord = (fig['layout']['xaxis' + str(n+1)]['domain'][0] + fig['layout']['xaxis' + str(n+1)]['domain'][1])/2
+		title_ycoord = fig['layout']['yaxis' + str(n+1)]['domain'][1]
+		note = dict(
+				font = dict(size = 14), 
+				xref = "paper", 
+				yref = "paper", 
+				xanchor = "center", 
+				yanchor = "bottom",
+				x = title_xcoord,
+				y = title_ycoord,
+				text = name, 
+				showarrow = False)
+		annotations.append(note)
 	return annotations
 
-def make_average_button(annotations, trace_names, average_plot_names):
+def add_average_button(annotations, trace_names, average_plot_names):
 	print(average_plot_names)
 	visibility = [False for _ in range(len(trace_names))] + [True for _ in range(len(average_plot_names))] #Fix Magic Number
-	average_button = dict(
-					label = "Summary Box Plot",
-					method = 'update',
-					args = [
-						dict(
-						visible = visibility
-						), 
-						dict(
-						title = dict(
-								text = "<b> Summary Box Plot </b> <br> Baseline Subtracted PC Firing Rate vs. Time",
-								font = dict(
-										size = 16
-										),	
-								y = 0.98,
-								x = 0.495,
-								xanchor = 'center',
-								yanchor = 'top'
-								),
-						annotations = annotations
-						)
-						]
-					)
+	label = "Summary Box Plot"
+	average_button = pltutils.create_button(label, visibility, annotations)
 	return average_button
 
-def make_oneplot_buttons(fig, dropdown_names, trace_names):
+def add_oneplot_buttons(fig, dropdown_names, trace_names):
 	buttons = []
 	print(trace_names)
 	for n, name in enumerate(dropdown_names):
@@ -225,35 +169,14 @@ def make_oneplot_buttons(fig, dropdown_names, trace_names):
 			visibility = [True if trace == "Up" else False for trace in trace_names]
 		else:
 			visibility = [False if trace == "Up" else True for trace in trace_names]
-		button =  dict(
-					label = name,
-					method = 'update',
-					args = [
-						dict(
-						visible = visibility
-						), 
-						dict(
-						title = dict(
-								text = "<b> Summary Cell Plot </b> <br> Baseline Subtracted PC Firing Rate vs. Time",
-								font = dict(
-										size = 16
-										),	
-								y = 0.98,
-								x = 0.495,
-								xanchor = 'center',
-								yanchor = 'top'
-								)
-						)
-						]
-					)
+		
+		button =  pltutils.create_button(name, visibility, None)
 		buttons.append(button)
 	return buttons
 
-
-
-def make_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, average_plot_names):
+def add_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, average_plot_names):
 	if "oneplotsummaries" in plot_params:
-		return make_oneplot_buttons(fig, dropdown_names, trace_names)
+		return add_oneplot_buttons(fig, dropdown_names, trace_names)
 	buttons = []
 	for n, name in enumerate(dropdown_names):
 		label = ''
@@ -272,25 +195,10 @@ def make_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, avera
 			label = name[0] + " (" + name[1] + ")"	
 
 		annotations = get_annotations(fig, name, sheetinfo, plot_params)
-		button = dict(
-				label = label,
-				method = 'update', 
-				args = [{'visible': visibility}, 
-						 {'title': {
-							'text': "<b>" + label + "</b>" + "<br> Baseline Subtracted PC Firing Rate vs. Time",
-							'font': {'size' : 16},
-							'y': 0.98,
-							'x': 0.495, 
-							'xanchor': 'center',
-							'yanchor': 'top'
-							},
-						  'annotations' : annotations
-						}
-						]
-			)
+		button = pltutils.create_button(label, visibility, annotations)
 		buttons.append(button)
 	average_annotations = get_annotations(fig, "average", sheetinfo, plot_params, average_plot_names)
-	average_button = make_average_button(average_annotations, trace_names, average_plot_names)
+	average_button = add_average_button(average_annotations, trace_names, average_plot_names)
 	buttons.insert(0,average_button)
 	return buttons
 
@@ -369,15 +277,13 @@ def set_fig_dimensions(filename,  plot_params):
 	return fig, plot_height, plot_width
 
 
-
-
 def plot_firing_rates(sessions, sheetinfo, plot_params):
 	print("Number of Data Points: ", len(sessions))
 	sessions.sort(key = lambda s: (s.cell, -int(s.gain[1]), s.tlength[1]))
 	dropdown_names, average_plot_names, filename = get_names(sessions, plot_params)
 	fig, plot_height, plot_width = set_fig_dimensions(filename,  plot_params)
 	trace_names = add_traces(fig, sessions, sheetinfo,  plot_params)
-	buttons = make_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, average_plot_names)
+	buttons = add_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, average_plot_names)
 	button_layer_1_height = 1.10
 	fig.update_layout(
 		autosize = False,

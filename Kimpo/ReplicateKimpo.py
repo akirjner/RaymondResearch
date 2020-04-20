@@ -73,7 +73,7 @@ def get_sheetinfo(args):
 	step_lengths = ['250 ms', '500 ms', '1000 ms']
 	gains = ['x2', 'x0']
 	sheet = pd.read_excel('trialbytrial.xlsx', sheet_name = sheetname)
-	if '-allcells'in args or '-oneplotsummaries' in args:	
+	if '-allcells' in args:	
 		sheetname = 'Steps All'
 		full_sheet = pd.read_excel('trialbytrial.xlsx', sheet_name = sheetname)
 		colstart = full_sheet.columns[0]

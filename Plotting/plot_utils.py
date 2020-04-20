@@ -22,7 +22,7 @@ def createcellsinfo(sessions, sheetinfo):
 		gain = session.gain
 		slope = session.slope
 		pvalue = session.pvalue
-		tlength = session.tlength.keys()[0]
+		tlength = session.tlength[0]
 		if tlength == '250 ms':
 			cellsinfo[cellname][gain][0] = slope
 		elif tlength == '500 ms':
@@ -132,6 +132,26 @@ def create_scatter_trace(fig, session, plot_params, plot_attributes):
 		)
 		fig.append_trace(scatter_trace, plot_row, plot_col)
 
+def create_button(label, visibility, annotations):
+	button = 	dict(
+				label = label,
+				method = 'update', 
+				args = [{'visible': visibility}, 
+						 {'title': {
+							'text': "<b>" + label + "</b>" + "<br> Baseline Subtracted PC Firing Rate vs. Time",
+							'font': {'size' : 16},
+							'y': 0.98,
+							'x': 0.495, 
+							'xanchor': 'center',
+							'yanchor': 'top'
+							},
+						  'annotations' : annotations
+						}
+						]
+			)
+	return button
+
+
 def create_line_trace(fig, session, plot_params, plot_attributes):
 	session_df = session.data
 	trials = session_df['Trial Starts']
@@ -150,7 +170,7 @@ def create_line_trace(fig, session, plot_params, plot_attributes):
  			y = best_fit, 
  			mode = 'lines', 
  			line = dict(color =  color), 
- 			name =  "m" +  label 
+ 			name =  "m " +  label 
  					+ (" = " + str(round(session.slope, 3)) + ", p = " + str(round(session.pvalue, 3))),
  			hoverinfo = 'name',
  			hoverlabel = dict(namelength = -1),
@@ -161,7 +181,7 @@ def create_line_trace(fig, session, plot_params, plot_attributes):
  			y = best_fit, 
  			mode = 'lines', 
  			line = dict(color =  color), 
- 			name =  "m" +  label 
+ 			name =  "m " +  label 
  					+ (" = " + str(round(session.slope, 3)) + ", p = " + str(round(session.pvalue, 3))),
  			hoverinfo = 'name',
  			hoverlabel = dict(namelength = -1),
