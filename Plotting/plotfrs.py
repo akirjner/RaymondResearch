@@ -25,7 +25,8 @@ def make_one_plot_traces(fig, sessions, sheetinfo):
 	x_down = sorted(cellsinfo.keys())
 	gains = GAINS
 	tlengths = LENGTHS
-	for cell in x_up:
+	sel_up = []
+	for c, cell in enumerate(x_up):
 		for t, tlength in enumerate(tlengths):
 			slope = cellsinfo[cell]['x2'][t]
 			pvalue = cellsinfo[cell]['x2'][t]
@@ -193,6 +194,8 @@ def add_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, averag
 		elif "comparegains" in plot_params:
 			visibility = [True if (name[0] == trace_names[i][0] and name[1] == trace_names[i][1]) else False for i in range(len(trace_names))]
 			label = name[0] + " (" + name[1] + ")"	
+		if average_plot_names != None:
+			visibility = visibility + [False for _ in range(len(average_plot_names))]
 
 		annotations = get_annotations(fig, name, sheetinfo, plot_params)
 		button = pltutils.create_button(label, visibility, annotations)
@@ -202,7 +205,7 @@ def add_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, averag
 	buttons.insert(0,average_button)
 	return buttons
 
-def get_names(sessions, plot_params):
+def get_names(sessions, plot_params, sheetinfo):
 	dropdown_individual = []
 	dropdown_average = []
 	filename = ""
@@ -237,6 +240,7 @@ def get_names(sessions, plot_params):
 			filename = "compare-gains-by-cell"
 			dropdown_individual.sort(key = lambda x: (x[0], x[2]))
 			dropdown_individual = [(name[0], name[1]) for name in dropdown_individual]
+	filename = filename + "-" + sheetinfo.sheetname.replace(" ", '-')
 	return dropdown_individual, dropdown_average, filename
 
 def set_fig_dimensions(filename,  plot_params):
@@ -247,17 +251,16 @@ def set_fig_dimensions(filename,  plot_params):
 	plot_width = 1605
 	if filename == "default" or filename == "one-plot-summaries":
 		return fig, plot_height, plot_width	
-	if "by-cell" in filename:
-		if "allconditions" in filename:
-			numrows = 2
-			numcols = 3
-			plot_height = 950
-		if "compare-lengths" in filename:
-		 	numrows = 1
-		 	numcols = 3
-		elif "compare-gains" in filename:
-		 	numrows = 1
-		 	numcols = 2
+	if "allconditions" in filename:
+		numrows = 2
+		numcols = 3
+		plot_height = 950
+	if "compare-lengths" in filename:
+	 	numrows = 1
+	 	numcols = 3
+	elif "compare-gains" in filename:
+	 	numrows = 1
+		numcols = 2
 	fig = subplots.make_subplots(rows = numrows, 
 								 cols = numcols, 
 								 horizontal_spacing = 0.025
@@ -280,7 +283,7 @@ def set_fig_dimensions(filename,  plot_params):
 def plot_firing_rates(sessions, sheetinfo, plot_params):
 	print("Number of Data Points: ", len(sessions))
 	sessions.sort(key = lambda s: (s.cell, -int(s.gain[1]), s.tlength[1]))
-	dropdown_names, average_plot_names, filename = get_names(sessions, plot_params)
+	dropdown_names, average_plot_names, filename = get_names(sessions, plot_params, sheetinfo)
 	fig, plot_height, plot_width = set_fig_dimensions(filename,  plot_params)
 	trace_names = add_traces(fig, sessions, sheetinfo,  plot_params)
 	buttons = add_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, average_plot_names)
@@ -309,7 +312,6 @@ def plot_firing_rates(sessions, sheetinfo, plot_params):
 				)
 			],
 		)
-
 
 	py.plot(fig, filename = filename)
 
