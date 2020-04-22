@@ -15,19 +15,17 @@ class SheetInfo():
 		self.lengths = sheet['STEP LENGTH']
 
 class SessionInfo():
-	def __init__(self, sessioninfolist):
-		self.monkey = sessioninfolist[0]
-		self.cell = sessioninfolist[1] if self.monkey == "Edison" else self.monkey[0] + sessioninfolist[1]
-		self.gain = sessioninfolist[2] 
-		self.tlength = (sessioninfolist[3], 0)
-		if sessioninfolist[3] == '500 ms':
-			self.tlength = (sessioninfolist[3], 1)
-		elif sessioninfolist[3] == '1000 ms':
-			self.tlength = (sessioninfolist[3], 2) 
-		self.slope = sessioninfolist[7]
-		self.pvalue = sessioninfolist[9]
-		self.tvalue = sessioninfolist[10]
-		sessiondata = {"Trial Starts": sessioninfolist[8], "Firing Rate": sessioninfolist[4], "Baseline Firing Rate": sessioninfolist[5], "Best Fit Line": sessioninfolist[6]}
+	def __init__(self, sessioninfo, sessionvalues, sessiondata):
+		self.monkey = sessioninfo[0]
+		self.cell = sessioninfo[1] if self.monkey == "Edison" else self.monkey[0] + sessioninfo[1]
+		self.gain = sessioninfo[2] 
+		self.tlength = (sessioninfo[3], 0)
+		if sessioninfo[3] == '500 ms':
+			self.tlength = (sessioninfo[3], 1)
+		elif sessioninfo[3] == '1000 ms':
+			self.tlength = (sessioninfo[3], 2) 
+		self.slopes = sessionvalues["slopes"]
+		self.pvalues = sessionvalues["pvalues"]
 		self.data = pd.DataFrame(data = sessiondata, index = None)
 
 class Channel:
@@ -47,10 +45,11 @@ class Channel:
 			self.data = "None"
 			if len(channel_info[8]) != 0:
 				self.data = self.get_data(channel_info)
+
 	
 	def get_data(self, channel_info):
 		data = []
-		if self.name == 'ssfrLis' or self.name == 'ssfrGaus' or self.name == 'ssfrIsi':
+		if len(channel_info[8][0]) > 1:
 			data = channel_info[8][0]
 			return data
 		else:

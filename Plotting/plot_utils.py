@@ -20,8 +20,8 @@ def createcellsinfo(sessions, sheetinfo):
 	for session in sessions:
 		cellname = session.cell
 		gain = session.gain
-		slope = session.slope
-		pvalue = session.pvalue
+		slope = session.slopes['FR']
+		pvalue = session.pvalues['FR']
 		tlength = session.tlength[0]
 		if tlength == '250 ms':
 			cellsinfo[cellname][gain][0] = slope
@@ -155,7 +155,7 @@ def create_button(label, visibility, annotations):
 def create_line_trace(fig, session, plot_params, plot_attributes):
 	session_df = session.data
 	trials = session_df['Trial Starts']
-	best_fit = session_df['Best Fit Line']	
+	best_fit = session_df['FR Best Fit Line']	
 	line_trace = None
 
 	color = plot_attributes['color']
@@ -171,7 +171,7 @@ def create_line_trace(fig, session, plot_params, plot_attributes):
  			mode = 'lines', 
  			line = dict(color =  color), 
  			name =  "m " +  label 
- 					+ (" = " + str(round(session.slope, 3)) + ", p = " + str(round(session.pvalue, 3))),
+ 					+ (" = " + str(round(session.slopes['FR'], 3)) + ", p = " + str(round(session.pvalues['FR'], 3))),
  			hoverinfo = 'name',
  			hoverlabel = dict(namelength = -1),
  		))
@@ -182,7 +182,7 @@ def create_line_trace(fig, session, plot_params, plot_attributes):
  			mode = 'lines', 
  			line = dict(color =  color), 
  			name =  "m " +  label 
- 					+ (" = " + str(round(session.slope, 3)) + ", p = " + str(round(session.pvalue, 3))),
+ 					+ (" = " + str(round(session.slopes['FR'], 3)) + ", p = " + str(round(session.pvalues['FR'], 3))),
  			hoverinfo = 'name',
  			hoverlabel = dict(namelength = -1),
  		)

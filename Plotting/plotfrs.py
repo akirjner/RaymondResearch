@@ -111,7 +111,7 @@ def add_traces(fig,sessions, sheetinfo, plot_params):
 			pltutils.create_line_trace(fig,session, plot_params, plot_attributes)
 			trace_name = (session.cell, session.tlength[0], session.gain)
 			trace_names = trace_names + [trace_name, trace_name]
-			trace_value = trace_name + (session.slope,session.pvalue)
+			trace_value = trace_name + (session.slopes['FR'],session.pvalues['FR'])
 			print(trace_value)
 			plot_row = plot_attributes['row']
 			plot_col = plot_attributes['col']

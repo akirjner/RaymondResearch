@@ -46,6 +46,7 @@ def get_spk_idx(ss_times, time):
 def session_names(session_data):
 	for channel in session_data.channels:
 		print(channel.name)
+		print(channel.data)
 
 def get_gains(args):
 	gains = [g for g in GAINS if "-" + g in args]
@@ -214,6 +215,11 @@ def get_ssfrBase(ss_channel, trial_starts):
 		baseline_frs[i] = baseline_rate
 	return baseline_frs
 
+def get_olp_hevel(eyevel, trial_starts, sample_rate):
+	trial_eyevels = []
+	for t in trial_starts:
+		print(eyevel)
+
 def create_session_objs(sheetinfo, sessionmap):
 	sessionkeys = sessionmap.keys()
 	sessionObjects = []
@@ -223,9 +229,15 @@ def create_session_objs(sheetinfo, sessionmap):
 		trial_starts = get_trial_starts(sheetinfo, sessionkey, session_data)
 		ss_channel = get_channel(session_data, "ss")
 		sample_rate = get_channel(session_data, "hevel").samplerate
+		print(sample_rate)
 		if ss_channel == -1:
 			print("Could Not Find Simple Spike Times")
 			return
+		eyevel = get_channel(session_data, "htvel")
+		session_names(session_data)
+
+		#trial_eyevels = get_olp_hevel(eyevel, trial_starts, sample_rate)
+
 		ss_frs = get_frs(get_channel(session_data, "ssfrLis").data, sample_rate, trial_starts)
 		ss_frs_baseline = get_ssfrBase(ss_channel, trial_starts)
 		m, b = np.polyfit(trial_starts, ss_frs - ss_frs_baseline, 1)
@@ -233,15 +245,21 @@ def create_session_objs(sheetinfo, sessionmap):
 		bestfit = b + m*trial_starts
 		bestfit_baseline = b_baseline + m_baseline*trial_starts
 		t_starts = sm.add_constant(trial_starts)
+		
 		bs_sub = ss_frs - ss_frs_baseline
 		bs_sub_mod = sm.OLS(bs_sub, t_starts)
 		bs_sub_res = bs_sub_mod.fit()
-		p_val_bs_sub = bs_sub_res.pvalues
-		t_val_bs_sub = bs_sub_res.tvalues
+		p_val_bs_sub = bs_sub_res.pvalues[1]
 
+		bs_mod = sm.OLS(ss_frs_baseline, t_starts)
+		bs_mod_res = bs_sub_mod.fit()
+		p_val_bs = bs_mod_res.pvalues[1]
 
-		sessioninfolist = sessionmap[sessionkey] + [ss_frs, ss_frs_baseline, bestfit, m, trial_starts, p_val_bs_sub[1], t_val_bs_sub[1]]
-		sessionObjects.append(SessionInfo(sessioninfolist))
+		sessionvalues = {'slopes': {'FR': m, 'Baseline' : m_baseline}, 'pvalues' : {'FR': p_val_bs_sub, 'Baseline' : p_val_bs}}
+		sessiondf = {"Trial Starts": trial_starts, "Firing Rate" : ss_frs, "Baseline Firing Rate" : ss_frs_baseline,
+						"FR Best Fit Line" : bestfit, "Baseline Best Fit Line": bestfit_baseline}
+		sessioninfo = sessionmap[sessionkey] 
+		sessionObjects.append(SessionInfo(sessioninfo, sessionvalues, sessiondf))
 	return sessionObjects
 
 def get_plot_params():
