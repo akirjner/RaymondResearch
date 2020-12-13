@@ -5,8 +5,8 @@ import sys
 
 #Can be replaced in the future with cloud storage, local for now
 #############################################################################
-mat_files_path = "/Users/andrewkirjner/Desktop/Andrew/RaymondDataFiles/matlabfiles/"
-py_files_path = "/Users/andrewkirjner/Desktop/Andrew/RaymondDataFiles/pythonfiles/"
+mat_files_path = "/Users/andrewkirjner/Desktop/RaymondDataFiles/matlabfiles/"
+py_files_path = "/Users/andrewkirjner/Desktop/RaymondDataFiles/pythonfiles/"
 ##############################################################################
 
 
