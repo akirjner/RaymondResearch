@@ -1,0 +1,13 @@
+Kimpo/**.pyc
+Kimpo/SectionPlots/**
+Kimpo/eyevelplots/**
+Kimpo/venv/**
+Jupyter/**
+Trace/**
+MISC/**
+Kimpo/__pycache__/**
+.idea/**
+.ipynb_checkpoints/**
+Plotting/**
+Structures/**
+Kimpo/~$trialbytrial.xlsx

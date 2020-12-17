@@ -6,212 +6,85 @@ import numpy as np
 import chart_studio.plotly as py
 import plotly.graph_objects as go
 from plotly import subplots
+import plot_utils as pltutils
+
+GAINS = ['x2', 'x0']
+GAIN_NAMES = [' Gain Up (x2) Ipsi', ' Gain Down (x0) Contra']
+GAIN_NAMES_OPP = [' Gain Up (x2) Contra', ' Gain Down (x0) Ipsi']
+
+COLORS = ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02']
+LENGTHS = [' 250 ms', ' 500 ms', ' 1000 ms']
+SYMBOLS = ['circle', 'square', 'triangle-up']
 
 
-def get_plot_attributes(trace_name, plot_params):
-	color = ''
-	symbol = ''
-	label = ''
-	legend_group = ''
-	if "allconditions" in plot_params:
-		if trace_name[1] == '250 ms':
-			if trace_name[2] == 'x2':
-				color = '#1b9e77'
-			elif trace_name[2] == 'x0':
-				color = '#d95f02'
-			symbol = 'circle'
-		elif trace_name[1] == '500 ms':
-			if trace_name[2] == 'x2':
-				color = '#7570b3'
-			elif trace_name[2] == 'x0':
-				color = '#e7298a'
-			symbol = 'triangle-up'
-		elif trace_name[1] == '1000 ms':
-			if trace_name[2] == 'x2':
-				color = '#66a61e'
-			elif trace_name[2] == 'x0':
-				color = '#e6ab02'
-			symbol = 'cross'
-	if "comparelengths" in plot_params:
-		color = '#1b9e77'
-		symbol = 'circle'
-		legend_group = 'group1'
-		if trace_name[1] == '500 ms':
-			color = '#d95f02'
-			symbol = 'triangle-up'
-			legend_group = 'group2'
-		elif trace_name[1] == '1000 ms':
-			color = '#7570b3'
-			symbol = 'cross'
-			legend_group = 'group3'
-		label = trace_name[1]
-	elif "comparegains" in plot_params:
-		color = '#1b9e77'
-		symbol = 'circle'
-		legend_group = 'group1'
-		label = trace_name[2] + (" (ipsi)" if "oppside" not in plot_params else " (contra)")
-		if trace_name[2] == 'x0':
-			color = '#7570b3'
-			symbol = 'cross'
-			legend_group = 'group2'
-			label = trace_name[2] + (" (contra)" if "oppside" not in plot_params else " (ipsi)")
-	return color, symbol, label
-
-def createcellsinfo(sessions, sheetinfo):
-	cellsinfo = {}
-	for cell in sheetinfo.uniquecells:
-		if cell[0] != 'E':
-			cell = 'D' + cell
-		cellsinfo[cell] = {'x2': [None, None, None], 'x0': [None, None, None]}
-	print(cellsinfo.keys())
-	for session in sessions:
-		cellname = session.cell
-		gain = session.gain
-		slope = session.slope
-		pvalue = session.pvalue
-		tlength = session.tlength.keys()[0]
-		if tlength == '250 ms':
-			cellsinfo[cellname][gain][0] = slope
-		elif tlength == '500 ms':
-			cellsinfo[cellname][gain][1] = slope
-		else:
-			cellsinfo[cellname][gain][2] = slope
-	return cellsinfo
-
-def add_one_plot_traces(fig, sessions, sheetinfo):
-	cellsinfo = createcellsinfo(sessions, sheetinfo)
+##One Plot Summary Trace 
+def make_one_plot_traces(fig, sessions, sheetinfo, key):
+	cellsinfo = pltutils.createcellsinfo(sessions, sheetinfo, 'FR')
+	cellsinfo_baseline = pltutils.createcellsinfo(sessions, sheetinfo, 'Baseline')
 	y_up = [[], [], []]
+	y_up_baseline = [[],[],[]]
 	y_down = [[],[],[]]
+	y_down_baseline = [[],[],[]]
 	x_up = sorted(cellsinfo.keys())
-	x_down =sorted(cellsinfo.keys())
-	gains = ['x2', 'x0']
-	neg_sig_pvalues_up = [[], [], []]
-	neg_sig_pvalues_down = [[], [], []]
-	tlengths = ['250 ms', '500 ms', '1000 ms']
-	for cell in x_up:
+	x_down = sorted(cellsinfo.keys())
+	gains = GAINS
+	tlengths = LENGTHS
+	sel_up = []
+	for c, cell in enumerate(x_up):
 		for t, tlength in enumerate(tlengths):
 			slope = cellsinfo[cell]['x2'][t]
-			pvalue = cellsinfo[cell]['x2'][t]
 			y_up[t].append(slope)
 
+			slope_baseline = cellsinfo_baseline[cell]['x2'][t]
+			y_up_baseline[t].append(slope_baseline)
 	for cell in x_down:
 		for t, tlength in enumerate(tlengths):
 			slope = cellsinfo[cell]['x0'][t]
-			pvalue = cellsinfo[cell]['x2'][t]
 			y_down[t].append(slope)
-	fig.add_trace(go.Scatter(
-		x = x_up,
-		y = y_up[0],
-		marker = dict(color = '#1b9e77', size = 8.5, symbol = 'circle'),
-		mode = 'markers',
-		name = '250 ms')
-	)
-	fig.add_trace(go.Scatter(
-		x = x_up,
-		y = y_up[1],
-		marker = dict(color = '#d95f02', size = 8.5, symbol = 'square'),
-		mode = 'markers',
-		name = '500 ms')
-	)
-	fig.add_trace(go.Scatter(
-		x = x_up,
-		y = y_up[2],
-		marker = dict(color = '#7570b3', size = 8.5, symbol = 'triangle-up'),
-		mode = 'markers',
-		name = '1000 ms')
-	)
-	fig.add_trace(go.Scatter(
-		x = x_down,
-		y = y_down[0],
-		marker = dict(color = '#1b9e77', size = 8.5, symbol = 'circle'),
-		mode = 'markers',
-		name = '250 ms')
-	)
-	fig.add_trace(go.Scatter(
-		x = x_down,
-		y = y_down[1],
-		marker = dict(color = '#d95f02', size = 8.5, symbol = 'square'),
-		mode = 'markers',
-		name = '500 ms')
-	)
-	fig.add_trace(go.Scatter(
-		x = x_down,
-		y = y_down[2],
-		marker = dict(color = '#7570b3', size = 8.5, symbol = 'triangle-up'),
-		mode = 'markers',
-		name = '1000 ms')
-	)
-	trace_names = ["Up", "Up", "Up", "Down", "Down", "Down"]
-	return trace_names
-
-
-
-def make_scatter_line_trace(session, trace_name, numcells, sheetinfo, plot_params):
-	session_df = session.data
-	trials = session_df['Trial Starts']
-	fr_baseline_subtracted = session_df['Firing Rate'] - session_df['Baseline Firing Rate']
-	best_fit = session_df['Best Fit Line']
-	scatter_trace = None
-	line_trace = None
-	if len(plot_params) == 0:
-		scatter_trace = go.Scatter(
-			name = "Firing Rate", \
-			x = trials, 
-			y = fr_baseline_subtracted, 
-			mode = 'markers'
-		)	
-		line_trace = go.Scatter(
-			x = trials,
-	 		y = best_fit, 
-	 		mode = 'lines', 
-	 		name = "Slope = " + str(round(session.slope, 4)) + "\n" + session.pvalue
-	 	)
-		
-	else:
-		color, symbol, label = get_plot_attributes(trace_name, plot_params)
-		scatter_trace = go.Scatter(
-			name = "Firing Rate " + label, 
-			x = trials, 
-			y = fr_baseline_subtracted, 
-			mode = 'lines+markers', 
-			opacity = 0.5, 
-			marker = dict(symbol = symbol, color = color, opacity = 0.75), 
-			line = dict(dash = 'dot', color = color),
-			showlegend = False if "bymonkey" in plot_params else True,
-			hoverinfo = 'x+y'
+			
+			slope_baseline = cellsinfo_baseline[cell]['x0'][t]
+			y_down_baseline[t].append(slope_baseline)
+	for ind, y_vals in enumerate(y_up):
+		fig.add_trace(go.Scatter(
+			x = x_up,
+			y = y_up[ind],
+			marker = dict(color = COLORS[ind], size = 8.5, symbol = SYMBOLS[ind]),
+			mode = 'markers',
+			name = LENGTHS[ind] + ' x2')
 		)
-		
-		showline = True
-		if "bymonkey" in plot_params:
-			cell = session.cell if session.monkey == "Edison" else session.cell[1:]
-			cell_num = (sheetinfo.uniquecells == cell).argmax()
-			if cell_num % numcells + 1 != 1:
-				showline = False
-			if session.gain == 'x0' and session.tlength.keys()[0] == "1000 ms" and cell == "E32-2": #Special Case
-				showline = True
-		line_trace = go.Scatter(
-			x = trials,
- 			y = best_fit, 
- 			mode = 'lines', 
- 			line = dict(color = color), 
- 			name =  "m" + label  + (" = " + str(round(session.slope, 3)) + ", p = " + str(round(session.pvalue, 3)) if "bymonkey" not in plot_params else ""),
- 			showlegend = showline,
- 			hoverinfo = 'name',
- 			hoverlabel = dict(namelength = -1),
+		fig.add_trace(go.Scatter(
+			x = x_up,
+			y = y_up_baseline[ind],
+			marker = dict(color = COLORS[ind + 3], size = 8.5, symbol = SYMBOLS[ind]),
+			mode = 'markers',
+			name = LENGTHS[ind]+ ' x2 Baseline')
+		)
+	for ind, y_vals in enumerate(y_down):
+		fig.add_trace(go.Scatter(
+			x = x_down,
+			y = y_down[ind],
+			marker = dict(color = COLORS[ind], size = 8.5, symbol = SYMBOLS[ind]),
+			mode = 'markers',
+			name = LENGTHS[ind]+ ' x0')
+		)
+		fig.add_trace(go.Scatter(
+			x = x_down,
+			y = y_down_baseline[ind],
+			marker = dict(color = COLORS[ind+3], size = 8.5, symbol = SYMBOLS[ind]),
+			mode = 'markers',
+			name = LENGTHS[ind]+ ' x0 Baseline')
+		)
 
- 		)
- 	return scatter_trace, line_trace
 
-
-
+#Boxplot Trace
 def make_average_trace(fig, average_plot, plot_params):
-	for (row, col) in average_plot.keys():
+	for rc, (row, col) in enumerate(average_plot.keys()):
 		cell_names = []
-		cell_slopes = []
+		cell_fr_slopes = []
+		cell_eye_slopes = []
 		pos_sig_pvalues = []
 		neg_sig_pvalues = []
 		for t, trace_value in enumerate(average_plot[(row, col)]):
-			#if trace_value[0] == 'E32-2' and trace_value[1] == '1000 ms' and trace_value[2] == 'x2' : continue
 			textval = ''
 			if "allconditions" in plot_params:
 				textval = trace_value[0]
@@ -219,275 +92,214 @@ def make_average_trace(fig, average_plot, plot_params):
 				textval = trace_value[0] + ", " + trace_value[1]
 			elif "comparelengths" in plot_params:
 				textval = trace_value[0] + ", " + trace_value[2]
-			textval = textval + ", p-value: " + str(round(trace_value[4], 4))
-			if trace_value[4] < 0.05:
-				neg_sig_pvalues.append(t)
-
-			cell_slopes.append(trace_value[3])
+			if "eyevel" not in plot_params:
+				textval = textval + ", p-value: " + str(round(trace_value[4], 4))
+				if trace_value[4] < 0.05:
+					neg_sig_pvalues.append(t)
+			else:
+				cell_eye_slopes.append(trace_value[4])
+			cell_fr_slopes.append(trace_value[3])
 			cell_names.append(textval)
-		box = go.Box(
-			name = 'Summary Plot',
-			y = cell_slopes,
-			text = cell_names,
-			boxpoints = 'all',
-			selectedpoints = neg_sig_pvalues,
-			selected = dict(
-					   marker = dict(
-								color = 'black',
-								size = 7 
-								)
-						    ),
-			pointpos = -1.8,
-			jitter = 0.25,
-			boxmean = 'sd',
-			hoverinfo = "text + y",
-			showlegend = False
-			)
-		fig.append_trace(box, row = row, col = col)
+		if "eyevel" not in plot_params:
+			box = go.Box(
+				name = 'Summary Plot',
+				y = cell_fr_slopes,
+				text = cell_names,
+				boxpoints = 'all',
+				selectedpoints = neg_sig_pvalues,
+				selected = dict(
+						   marker = dict(
+									color = 'black',
+									size = 7 
+									)
+							    ),
+				pointpos = -1.8,
+				jitter = 0.25,
+				boxmean = 'sd',
+				hoverinfo = "text + y",
+				showlegend = False
+				)
+			fig.append_trace(box, row = row, col = col)
+		
+		else:
+			# l3 = zip(cell_fr_slopes, cell_eye_slopes)
+			# l3 = sorted(l3)
+			# cell_fr_slopes = []
+			# cell_eye_slopes = []
+			# for l in l3:
+			# 	cell_fr_slopes.append(l[0])
+			# 	cell_eye_slopes.append(l[1])
+
+
+			# scatter = go.Scatter(
+			# 	name = "Eye Velocity vs. PC Baseline Subtracted Firing Rate",
+			# 	x = cell_fr_slopes,
+			# 	y = cell_eye_slopes,
+			# 	text = cell_names,
+			# 	mode = 'lines + markers', 
+			# 	opacity = 0.5, 
+			# 	marker = dict(symbol = 'circle', opacity = 0.75), 
+			# 	line = dict(dash = 'dot', color = COLORS[rc]),
+			# 	showlegend = False,
+			# 	hoverinfo = 'text+y')
+			# fig.append_trace(scatter, row, col)
+			# m_eye_fr, b_eye_fr = np.polyfit(np.array(cell_fr_slopes), np.array(cell_eye_slopes), 1)
+			# bestfit_eye_fr = m_eye_fr*np.array(cell_fr_slopes) + b_eye_fr
+			# line = go.Scatter(
+			# 	x = np.array(cell_fr_slopes),
+	 	# 		y = bestfit_eye_fr, 
+	 	# 		mode = 'lines', 
+	 	# 		line = dict(color = COLORS[rc] ), 
+	 	# 		name =  "m " +  str(round(m_eye_fr, 4)),
+	 	# 		hoverinfo = 'name',
+	 	# 		hoverlabel = dict(namelength = -1),
+	 	# 		showlegend = False
+			# 	)
+			# fig.append_trace(line, row, col)
+			box = go.Box(
+				name = 'Summary Plot',
+				y = cell_eye_slopes,
+				text = cell_names,
+				boxpoints = 'all',
+				selectedpoints = neg_sig_pvalues,
+				selected = dict(
+						   marker = dict(
+									color = 'black',
+									size = 7 
+									)
+							    ),
+				pointpos = -1.8,
+				jitter = 0.25,
+				boxmean = 'sd',
+				hoverinfo = "text + y",
+				showlegend = False
+				)
+			fig.append_trace(box, row = row, col = col)
+
 
 	
 
-def add_traces(fig,sessions, sheetinfo, numcells, plot_params):
-	if "oneplotsummaries" in plot_params: 
-		return add_one_plot_traces(fig, sessions, sheetinfo)
+def add_traces(fig,sessions, sheetinfo, plot_params):
 	trace_names = []
-	average_plot = {}
-	overlay = any(["overlay" in param for param in plot_params])
-	for session in sessions:
-		trace_name = (session.cell if "bymonkey" not in plot_params else session.monkey, session.tlength.keys()[0], session.gain)
-		scatter_trace, line_trace = make_scatter_line_trace(session, trace_name, numcells, sheetinfo, plot_params)
-		if len(plot_params) == 0:
-			fig.add_trace(scatter_trace)
-			fig.add_trace(line_trace)	
-		else:
-			plot_row = 0
-			plot_col = 0
-			if "bymonkey" in plot_params:
-				cell = session.cell if session.monkey == "Edison" else session.cell[1:]
-				cell_num = (sheetinfo.uniquecells == cell).argmax()
-				plot_row = 1
-				plot_col = cell_num % numcells + 1
-				if overlay:
-					fig.append_trace(scatter_trace, 1, plot_col)
-					fig.append_trace(line_trace, 1, plot_col)
-				elif "comparelengths" in plot_params:
-					plot_row = session.tlength[session.tlength.keys()[0]] + 1
-				elif "comparegains" in plot_params:
-					plot_row = 1 if session.gain == 'x2' else 2			
-			elif "allconditions" in plot_params:
-				if session.gain == 'x2':
-					plot_row = 1
-				else:
-					plot_row = 2
-				if session.tlength.keys()[0] == '250 ms':
-					plot_col = 1
-				elif session.tlength.keys()[0] == '500 ms':
-					plot_col = 2
-				elif session.tlength.keys()[0] == '1000 ms':
-					plot_col = 3
-			elif not overlay:
-				plot_row = 1
-				if "comparelengths" in plot_params:
-					plot_col = session.tlength[session.tlength.keys()[0]] + 1
-				elif "comparegains" in plot_params:
-					plot_col = 1 if session.gain == 'x2' else 2
-			fig.append_trace(scatter_trace, plot_row, plot_col)
-			fig.append_trace(line_trace, plot_row, plot_col)
-			trace_value = trace_name + (session.slope,session.pvalue)
-			print(trace_value)
+	traces = []
+	key = 'FR' if 'baseline' not in plot_params else "Baseline"
+	if "oneplotsummaries" in plot_params: 
+		make_one_plot_traces(fig, sessions, sheetinfo, key)
+		
+		trace_names = ['Up', 'Up Baseline']*3 + ['Down', 'Down Baseline']*3 
+	else:
+		average_plot = {}
+		for session in sessions:
+
+			plot_attributes = pltutils.get_plot_attributes(plot_params, session.tlength[0], session.gain)
+			pltutils.create_scatter_trace(fig, session, plot_params, plot_attributes)
+			pltutils.create_line_trace(fig,session, plot_params, plot_attributes)
+			trace_name = (session.cell, session.tlength[0], session.gain)
+			trace_names = trace_names + [trace_name, trace_name]
+			# if "eyevel" in plot_params:
+			# 	trace_names + [trace_name, trace_name]
+
+
+			trace_value = trace_name + (session.slopes[key],session.pvalues[key])
+			if "eyevel" in plot_params:
+				trace_value = trace_name + (session.slopes['FR'], session.slopes['Eye'])
+			plot_row = plot_attributes['row']
+			plot_col = plot_attributes['col']
 			if (plot_row, plot_col) in average_plot:
 				average_plot[(plot_row, plot_col)].append(trace_value)
 			else:
 				average_plot[(plot_row, plot_col)] = [trace_value]
-
-		trace_names = trace_names + [trace_name, trace_name]
-	make_average_trace(fig, average_plot, plot_params)
-
+		make_average_trace(fig, average_plot, plot_params)
 	return trace_names
 
 
-#Fix This Mess
+def get_plot_names(name, plot_params, average_plot_names):
+	if average_plot_names != None:
+		return average_plot_names
+	gain_names = GAIN_NAMES if "oppside" in plot_params else GAIN_NAMES_OPP
+	length_names = LENGTHS
+	if "allconditions" in plot_params:
+		return [name + length_names[j] + gain_names[i] for i in range(len(gain_names)) for j in range(len(length_names))]
+	elif "comparelengths" in plot_params:
+		return length_names
+	elif "comparegains" in plot_params:
+		return gain_names
+
 def get_annotations(fig, name, sheetinfo, plot_params, average_plot_names = None):
 	annotations = []
-	overlay = any(["overlay" in param for param in plot_params])
-	plot_names = []
-	if average_plot_names != None:
-		for n, name in enumerate(average_plot_names):
-			title_xcoord = (fig['layout']['xaxis' + str(n+1)]['domain'][0] + fig['layout']['xaxis' + str(n+1)]['domain'][1])/2
-			title_ycoord = fig['layout']['yaxis' + str(n+1)]['domain'][1]
-			note = dict(
-					font = dict(size = 14), 
-					xref = "paper", 
-					yref = "paper", 
-					xanchor = "center", 
-					yanchor = "bottom",
-					x = title_xcoord,
-					y = title_ycoord,
-					text = name, 
-					showarrow = False)
-			annotations.append(note)
-		return annotations
-	if "bymonkey" in plot_params:
-		cells = list(sheetinfo.uniquecells)
-		numcells_each = len(cells)/2
-		if name[0] == "Darwin":
-			cells = ["D" + str(cells[i]) for i in range(numcells_each)]
-		else:
-			cells = [str(cells[i]) for i in range(numcells_each, len(cells))]
-		if overlay:
-			for i in range(len(cells)):
-				title_xcoord = (fig['layout']['xaxis' + str(i+1)]['domain'][0] + fig['layout']['xaxis' + str(i+1)]['domain'][1])/2
-				title_ycoord = fig['layout']['yaxis' + str(i+1)]['domain'][1]
-				note = dict(
-						font = dict(size = 14), 
-						xref = "paper", 
-						yref = "paper", 
-						xanchor = "center", 
-						yanchor = "bottom",
-						x = title_xcoord,
-						y = title_ycoord,
-						text = plot_names[i], 
-						showarrow = False)
-				annotations.append(note)
-		else:
-			plot_names = []
-			if "comparegains" in plot_params:
-				gain_names = [' Gain Up (x2) Ipsi', ' Gain Down (x0) Contra']
-				if "oppside" in plot_params:
-					gain_names = [' Gain Up (x2) Contra', ' Gain Down (x0) Ipsi']
-				plot_names = [cells[i] + gain_names[j] for j in range(len(gain_names)) for i in range(len(cells))]
-			elif "comparelengths" in plot_params:
-				length_names = [" 250 ms", " 500 ms", " 1000 ms"]
-				plot_names = [cells[i] + length_names[j] for j in range(len(length_names)) for i in range(len(cells))]
-			for i in range(len(plot_names)):
-				title_xcoord = (fig['layout']['xaxis' + str(i+1)]['domain'][0] + fig['layout']['xaxis' + str(i+1)]['domain'][1])/2
-				title_ycoord = fig['layout']['yaxis' + str(i+1)]['domain'][1]
-				note = dict(
-						font = dict(size = 14), 
-						xref = "paper", 
-						yref = "paper", 
-						xanchor = "center", 
-						yanchor = "bottom",
-						x = title_xcoord,
-						y = title_ycoord,
-						text = plot_names[i], 
-						showarrow = False)
-				annotations.append(note)
-	elif "allconditions" in plot_params:
-		annotations = []
-		plot_names = []
-		gain_names = [' Gain Up (x2) Ipsi', ' Gain Down (x0) Contra']
-		if "oppside" in plot_params:
-			gain_names = [' Gain Up (x2) Contra', ' Gain Down (x0) Ipsi']
-		length_names = [" 250 ms", " 500 ms", " 1000 ms"]
-		plot_names = [name + length_names[j] + gain_names[i] for i in range(len(gain_names)) for j in range(len(length_names))]
-		for i in range(len(plot_names)):
-			title_xcoord = (fig['layout']['xaxis' + str(i+1)]['domain'][0] + fig['layout']['xaxis' + str(i+1)]['domain'][1])/2
-			title_ycoord = fig['layout']['yaxis' + str(i+1)]['domain'][1]
-			note = dict(
-					font = dict(size = 14), 
-					xref = "paper", 
-					yref = "paper", 
-					xanchor = "center", 
-					yanchor = "bottom",
-					x = title_xcoord,
-					y = title_ycoord,
-					text = plot_names[i], 
-					showarrow = False)
-			annotations.append(note)
-	elif not overlay:
-		plot_names = []
-		if "comparelengths" in plot_params:
-			plot_names = ["250 ms Trials", "500 ms Trials", "1000 ms Trials"]
-		elif "comparegains" in plot_params:
-			if "oppside" not in plot_params:
-				plot_names = ['Gain Up (x2) Ipsiversive Trials', 'Gain Down (x0) Contraversive Trials']	
-			else:
-				plot_names = ['Gain Up (x2) Contraversive Trials', 'Gain Down (x0) Ipsiversive Trials']
-		for i in range(len(plot_names)):
-			title_xcoord = (fig['layout']['xaxis' + str(i+1)]['domain'][0] + fig['layout']['xaxis' + str(i+1)]['domain'][1])/2
-			title_ycoord = fig['layout']['yaxis' + str(i+1)]['domain'][1]
-			note = dict(
-					font = dict(size = 14), 
-					xref = "paper", 
-					yref = "paper", 
-					xanchor = "center", 
-					yanchor = "bottom",
-					x = title_xcoord,
-					y = title_ycoord,
-					text = plot_names[i], 
-					showarrow = False)
-			annotations.append(note)
+	plot_names = get_plot_names(name, plot_params, average_plot_names)
+	for n, name in enumerate(plot_names):
+		title_xcoord = (fig['layout']['xaxis' + str(n+1)]['domain'][0] + fig['layout']['xaxis' + str(n+1)]['domain'][1])/2
+		title_ycoord = fig['layout']['yaxis' + str(n+1)]['domain'][1]
+		note = dict(
+				font = dict(size = 14), 
+				xref = "paper", 
+				yref = "paper", 
+				xanchor = "center", 
+				yanchor = "bottom",
+				x = title_xcoord,
+				y = title_ycoord,
+				text = name, 
+				showarrow = False)
+		annotations.append(note)
 	return annotations
 
-def make_average_button(annotations, trace_names, average_plot_names):
+def add_average_button(annotations, trace_names, plot_params, average_plot_names):
 	print(average_plot_names)
 	visibility = [False for _ in range(len(trace_names))] + [True for _ in range(len(average_plot_names))] #Fix Magic Number
-	average_button = dict(
-					label = "Summary Box Plot",
-					method = 'update',
-					args = [
-						dict(
-						visible = visibility
-						), 
-						dict(
-						title = dict(
-								text = "<b> Summary Box Plot </b> <br> Baseline Subtracted PC Firing Rate vs. Time",
-								font = dict(
-										size = 16
-										),	
-								y = 0.98,
-								x = 0.495,
-								xanchor = 'center',
-								yanchor = 'top'
-								),
-						annotations = annotations
-						)
-						]
-					)
+	
+	label = "Summary Box Plot"
+	#if "eyevel" in plot_params:
+	#	label = "Eye Velocity vs. PC Baseline Subtracted Firing Rate"
+	#	visibility = [False for _ in range(len(trace_names))] + [True for _ in 2*range(len(average_plot_names))]
+	average_button = pltutils.create_button(label, visibility, annotations, None)
 	return average_button
 
-def make_oneplot_buttons(fig, dropdown_names, trace_names):
+def add_oneplot_buttons(fig, dropdown_names, trace_names):
 	buttons = []
 	print(trace_names)
 	for n, name in enumerate(dropdown_names):
 		visibility = []
+		key = 'FR' if 'Baseline' not in name else 'Baseline'
 		if n == 0:
-			visibility = [True if trace == "Up" else False for trace in trace_names]
-		else:
-			visibility = [False if trace == "Up" else True for trace in trace_names]
-		button =  dict(
-					label = name,
-					method = 'update',
-					args = [
-						dict(
-						visible = visibility
-						), 
-						dict(
-						title = dict(
-								text = "<b> Summary Cell Plot </b> <br> Baseline Subtracted PC Firing Rate vs. Time",
-								font = dict(
-										size = 16
-										),	
-								y = 0.98,
-								x = 0.495,
-								xanchor = 'center',
-								yanchor = 'top'
-								)
-						)
-						]
-					)
+			visibility = [True, False, True, False, True, False] + [False for _ in range(6)]
+		elif n == 1:
+			visibility = [False for _ in range(6)] + [True, False, True, False, True, False] 
+		elif n == 2:
+			visibility = [False, True, False, True, False, True] + [False for _ in range(6)]
+		elif n == 3:
+			visibility = [False for _ in range(6)] + [False, True, False, True, False, True]
+		elif n == 4:
+			visibility = [True, True] + [False for _ in range(4)] + [False for _ in range(6)] 
+		elif n == 5:
+			visibility = [False, False] + [True, True]  + [False, False]+ [False for _ in range(6)]
+		elif n == 6:
+			visibility = [False for _ in range(4)] + [True, True] + [False for _ in range(6)]
+		elif n == 7:
+			visibility = [False for _ in range(6)] + [True, True] + [False for _ in range(4)] 
+		elif n == 8:
+			visibility = [False for _ in range(6)] + [False, False] + [True, True]  + [False, False]
+		elif n == 9: 
+			visibility = [False for _ in range(6)] + [False for _ in range(4)] + [True, True]
+		# if key == 'Baseline':
+		# 	if n == 0:
+		# 		visibility = [True if trace == "Up" else False for trace in trace_names]
+		# 	else:
+		# 		visibility = [False if trace == "Up" else True for trace in trace_names]
+		# else:
+		# 	if n == 2:
+		# 		visibility = [True if trace == "Up Baseline" else False for trace in trace_names]
+		# 	else:
+		# 		visibility = [False if trace == "Up Baseline" else True for trace in trace_names]
+		button =  pltutils.create_button(name, visibility, None, "NoTitle")
 		buttons.append(button)
 	return buttons
 
-
-
-def make_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, average_plot_names):
+def add_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, average_plot_names):
 	if "oneplotsummaries" in plot_params:
-		return make_oneplot_buttons(fig, dropdown_names, trace_names)
+		return add_oneplot_buttons(fig, dropdown_names, trace_names)
 	buttons = []
 	for n, name in enumerate(dropdown_names):
-		print(name)
 		label = ''
 		visibility = []
 		if len(plot_params) == 0:
@@ -502,154 +314,134 @@ def make_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, avera
 		elif "comparegains" in plot_params:
 			visibility = [True if (name[0] == trace_names[i][0] and name[1] == trace_names[i][1]) else False for i in range(len(trace_names))]
 			label = name[0] + " (" + name[1] + ")"	
+		if average_plot_names != None:
+			visibility = visibility + [False for _ in range(len(average_plot_names))]
+			if "eyevel" in plot_params:
+				visibility = visibility + [False for _ in range(len(average_plot_names))]
 
 		annotations = get_annotations(fig, name, sheetinfo, plot_params)
-		button = dict(
-				label = label,
-				method = 'update', 
-				args = [{'visible': visibility}, 
-						 {'title': {
-							'text': "<b>" + label + "</b>" + "<br> Baseline Subtracted PC Firing Rate vs. Time",
-							'font': {'size' : 16},
-							'y': 0.98,
-							'x': 0.495, 
-							'xanchor': 'center',
-							'yanchor': 'top'
-							},
-						  'annotations' : annotations
-						}
-						]
-			)
+		button = pltutils.create_button(label, visibility, annotations, plot_params)
 		buttons.append(button)
 	average_annotations = get_annotations(fig, "average", sheetinfo, plot_params, average_plot_names)
-	average_button = make_average_button(average_annotations, trace_names, average_plot_names)
+	average_button = add_average_button(average_annotations, trace_names, plot_params, average_plot_names)
 	buttons.insert(0,average_button)
 	return buttons
 
-def get_names(sessions, plot_params):
-	dropdown_names = []
-	average_plot_names = []
+def get_names(sessions, plot_params, sheetinfo):
+	dropdown_individual = []
+	dropdown_average = []
 	filename = ""
 	if len(plot_params) == 0:
-		dropdown_names = [[session.cell, session.tlength.keys()[0], session.gain] for session in sessions]
+		dropdown_individual = [[session.cell, session.tlength[0], session.gain] for session in sessions]
 		filename = "default"
 	elif "oneplotsummaries" in plot_params:
-		dropdown_names.append("Cells Gain Up" + (" (Ipsi)" if "oppside" not in plot_params else " (Contra)"))
-		dropdown_names.append("Cells Gain Down" + (" (Contra)" if "oppside" not in plot_params else " (Ipsi)"))
+		gain_up_name = "Cells Gain Up" + (" (Ipsi)" if "oppside" not in plot_params else " (Contra)")
+		gain_down_name = "Cells Gain Down" + (" (Contra)" if "oppside" not in plot_params else " (Ipsi)")
+		dropdown_individual.append(gain_up_name)
+		dropdown_individual.append(gain_down_name)
+		dropdown_individual.append(gain_up_name + " Baseline")
+		dropdown_individual.append(gain_down_name + " Baseline")
+		dropdown_individual.append(gain_up_name + " 250 ms")
+		dropdown_individual.append(gain_up_name + " 500 ms")
+		dropdown_individual.append(gain_up_name + " 1000 ms")
+		dropdown_individual.append(gain_down_name + " 250 ms")
+		dropdown_individual.append(gain_down_name + " 500 ms")
+		dropdown_individual.append(gain_down_name + " 1000 ms")
 		filename = "one-plot-summaries"
 	else:
-		gain_names = [' Gain Up (x2) Ipsi',  ' Gain Down (x0) Contra']
-		length_names = [" 250 ms", " 500 ms", " 1000 ms"]
+		gain_names = GAIN_NAMES
+		length_names = LENGTHS
 		if "allconditions" in plot_params:
 			if "oppside" in plot_params:
-				gain_names = [' Gain Up (x2) Contra', ' Gain Down (x0) Ipsi']
-				length_names = [" 250 ms", " 500 ms", " 1000 ms"]
+				gain_names = GAIN_NAMES_OPP
 				filename = "oppside-"
-			average_plot_names = [length_names[j] + gain_names[i] for i in range(len(gain_names)) for j in range(len(length_names))]
-			dropdown_names = sorted(list(set([session.cell for session in sessions])))
+			dropdown_average = [length_names[j] + " " + gain_names[i] for i in range(len(gain_names)) for j in range(len(length_names))]
+			dropdown_individual = sorted(list(set([session.cell for session in sessions])))
 			filename = filename + "allconditions-by-cell"
-	 	elif "comparelengths" in plot_params and "comparegains" in plot_params:
-	 		if "bymonkey" in plot_params:
-	 			dropdown_names = sorted(unique([session.monkey for session in sessions]))
-	 			filename = "compare-lengths-and-gains-by-monkey"
-	 		else:
-	 			dropdown_names = sorted(unique([session.cell for session in sessions]))
-	 			filename = "compare-lengths-and-gains-by-cell"
-	 		if any(["overlay" in param for param in plot_params]):
-	 			filename = filename + "-overlay"
-	 			if "overlay-gains" in plot_params:
-	 				filename = filename + "-gains"
-	 			if "overlay-lengths" in plot_params:
-	 				filename = filename + "-lengths"
-	 	elif "comparelengths" in plot_params:
-	 		if "bymonkey" in plot_params:
-	 			dropdown_names = list(set([(session.monkey, session.gain) for session in sessions]))
-	 			filename = "compare-lengths-by-monkey"
-	 		else:
-				dropdown_names = list(set([(session.cell, session.gain) for session in sessions]))
-				filename = "compare-lengths-by-cell"
-				average_plot_names = length_names
-			dropdown_names.sort(key = lambda x: (x[0], -int(x[1][1])))
-			if "overlay-lengths" in plot_params:
-				filename = filename + "-overlay"
+		elif "comparelengths" in plot_params and "comparegains" in plot_params:
+				dropdown_individual = sorted(unique([session.cell for session in sessions]))
+				filename = "compare-lengths-and-gains-by-cell"
+		elif "comparelengths" in plot_params:
+			dropdown_individual = list(set([(session.cell, session.gain) for session in sessions]))
+			filename = "compare-lengths-by-cell"
+			dropdown_average = length_names
+			dropdown_individual.sort(key = lambda x: (x[0], -int(x[1][1])))
 		elif "comparegains" in plot_params:
-			if "bymonkey" in plot_params:
-				dropdown_names = list(set([(session.monkey, session.tlength.keys()[0], session.tlength[session.tlength.keys()[0]]) for session in sessions]))
-				filename = "compare-gains-by-monkey"
-			else:
-				average_plot_names = gain_names
-				dropdown_names = list(set([(session.cell, session.tlength.keys()[0], session.tlength[session.tlength.keys()[0]]) for session in sessions]))	
-				filename = "compare-gains-by-cell"
-			dropdown_names.sort(key = lambda x: (x[0], x[2]))
-			dropdown_names = [(name[0], name[1]) for name in dropdown_names]
-			if "overlay-gains" in plot_params:
-				filename = filename + "-overlay"
-	return dropdown_names, average_plot_names, filename
+			dropdown_average = gain_names
+			dropdown_individual = list(set([(session.cell, session.tlength[0], session.tlength[1]) for session in sessions]))	
+			filename = "compare-gains-by-cell"
+			dropdown_individual.sort(key = lambda x: (x[0], x[2]))
+			dropdown_individual = [(name[0], name[1]) for name in dropdown_individual]
+	filename = filename + "-" + sheetinfo.sheetname.replace(" ", '-')
+	if "baseline" in plot_params:
+		filename = filename + "-baseline"
+	if "eyevel" in plot_params:
+		filename = filename + "-eyevel" 
+	return dropdown_individual, dropdown_average, filename
 
-def set_fig_dimensions(filename, numcells_each, plot_params):
+def set_fig_dimensions(filename,  plot_params, y_ax_title, x_ax_title):
 	fig = go.Figure()
 	numrows = 1
 	numcols = 1
 	plot_height = 650
-	if filename == "default" or filename == "one-plot-summaries" or ("by-cell" in filename and "-overlay" in filename):
-		return fig, plot_height	
-	if "by-cell" in filename:
-		if "allconditions" in filename:
-			numrows = 2
-			numcols = 3
-			plot_height = 950
-		if "compare-lengths" in filename:
-		 	numrows = 1
-		 	numcols = 3
-		elif "compare-gains" in filename:
-		 	numrows = 1
-		 	numcols = 2
-	elif "by-monkey" in filename:
-		if "-overlay" in filename:
-		 	numrows = 1
-		elif "compare-lengths" in filename:
-		 	numrows = 3
-		 	plot_height = 850
-		elif "compare-gains" in filename:
-		 	numrows = 2
-		 	plot_height = 750
-		numcols = numcells_each	
+	plot_width = 1605
+	if filename == "default" or filename == "one-plot-summaries":
+		return fig, plot_height, 1605
+	if "allconditions" in filename:
+		numrows = 2
+		numcols = 3
+		plot_height = 950
+	if "compare-lengths" in filename:
+	 	numrows = 1
+	 	numcols = 3
+	elif "compare-gains" in filename:
+		numrows = 1
+		numcols = 2
 	fig = subplots.make_subplots(rows = numrows, 
 								 cols = numcols, 
 								 horizontal_spacing = 0.025
 								 )
 	if numrows != 1:
-		fig.update_xaxes(row = numrows, title_text = "Time (Seconds)")
+		fig.update_xaxes(row = numrows, title_text = x_ax_title)
 	else: 
-		fig.update_xaxes(title_text = "Time (Seconds)")
+		fig.update_xaxes(title_text = x_ax_title)
 	fig.update_xaxes(tickmode = 'auto', range = [0, 90])
 
 	if numcols != 1:
-		fig.update_yaxes(col = 1, title_text = "PC Firing Rate - BLS (sp/s)")
+		fig.update_yaxes(col = 1, title_text = y_ax_title)
 	else:
-		fig.update_yaxes(title_text = "PC Firing Rate - BLS (sp/s)")
+		fig.update_yaxes(title_text = y_ax_title)
 	fig.update_yaxes(tickmode = 'auto', range = [-100, 280])
 
-	return fig, plot_height
-
-
+	return fig, plot_height, plot_width
 
 
 def plot_firing_rates(sessions, sheetinfo, plot_params):
 	print("Number of Data Points: ", len(sessions))
-	sessions.sort(key = lambda x: (x.cell, -int(x.gain[1]), x.tlength[x.tlength.keys()[0]]))
-	dropdown_names, average_plot_names, filename = get_names(sessions, plot_params)
-	numcells_each = len(sheetinfo.uniquecells)/2
-	fig, plot_height = set_fig_dimensions(filename, numcells_each, plot_params)
-	trace_names = add_traces(fig, sessions, sheetinfo, numcells_each, plot_params)
-	buttons = make_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, average_plot_names)
+	sessions.sort(key = lambda s: (s.cell, -int(s.gain[1]), s.tlength[1]))
+	dropdown_names, average_plot_names, filename = get_names(sessions, plot_params, sheetinfo)
+	y_ax_title = "Baseline Subtracted PC Firing Rate (sp/s)"
+	x_ax_title = "Time (seconds)"
+	if "baseline" in plot_params:
+		y_ax_title = "Baseline PC Firing Rate (sp/s)"
+	elif "oneplotsummaries" in plot_params:
+		y_ax_title = "Change in PC Firing Rate (Delta sp/s)"
+		x_ax_title = "Cell"
+	elif "eyevel" in plot_params:
+		y_ax_title = "Average Open Loop Eye Velocity (deg/s)"
+
+	fig, plot_height, plot_width = set_fig_dimensions(filename,  plot_params, y_ax_title, x_ax_title)
+	trace_names = add_traces(fig, sessions, sheetinfo,  plot_params)
+	buttons = add_buttons(fig, dropdown_names, trace_names, plot_params, sheetinfo, average_plot_names)
 	button_layer_1_height = 1.10
+
+
 	fig.update_layout(
 		autosize = False,
 		height = plot_height,
-		width = 1605,
+		width = plot_width,
 		margin = go.layout.Margin(l = 10, r = 10, b = 10, t = 15, pad = 3),
-		yaxis_title = "PC Firing Rate - Baseline Subtracted (sp/s)",
+		yaxis_title = y_ax_title,
 		legend = dict(
 			x = 1.005, 
 			y = 0.5,
@@ -668,7 +460,6 @@ def plot_firing_rates(sessions, sheetinfo, plot_params):
 				)
 			],
 		)
-
 
 	py.plot(fig, filename = filename)
 
