@@ -180,12 +180,12 @@ def plot_eye_vs_fr(eye_vectors, fr_vectors, s, axs, pos_color, neg_color, gain, 
 
     x1 = np.arange(0, 5)
     x3 = np.arange(-5, 1)
-    faxs[s].fill_between(x1, 0, 40, color=pos_color, alpha=0.3)
-    faxs[s].fill_between(x3, -40, 0, color=neg_color, alpha=0.3)
-    faxs[s].set_xlim([-2, 2])
+    faxs[s].fill_between(x1, 0, 50, color=pos_color, alpha=0.3)
+    faxs[s].fill_between(x3, -50, 0, color=neg_color, alpha=0.3)
+    faxs[s].set_xlim([-4, 4])
     faxs[s].set_xlabel(xlab)
     faxs[s].set_ylabel(ylab)
-    faxs[s].set_ylim([-40, 40])
+    faxs[s].set_ylim([-50, 50])
     faxs[s].plot(range(-100, 100), [0]*200, color = 'k', linewidth = 1.25)
     faxs[s].plot([0]*200, range(-100, 100), color = 'k', linewidth = 1.25)
 
@@ -260,7 +260,7 @@ def get_colors(early_points, late_points, pos_color, neg_color, diff):
                 colors.append(pos_color)
     return colors
 
-def plot_scatterplots(vectors, axs, s, pos_color, neg_color, gain, direction, diff, type, per_section):
+def plot_scatterplots(vectors, axs, s, pos_color, neg_color, gain, direction, diff, type, per_section, pc = None):
     faxs = axs.ravel()
     early_points = vectors[0,:]
     late_points = vectors[1,:]
@@ -286,8 +286,10 @@ def plot_scatterplots(vectors, axs, s, pos_color, neg_color, gain, direction, di
             ylab = 'Change in Firing Rate'
     colors = get_colors(early_points, late_points, pos_color, neg_color, diff)
     axis_range = get_axis_range(s, gain, direction, type, diff)
+    if per_section and pc:
+        axis_range = get_axis_range(pc, gain, direction, type, diff)
     faxs[s].grid(True)
-    faxs[s].set_title(ylab + ' vs ' + xlab  + "\n" + section_names[s], loc = 'center', fontsize = 13)
+    faxs[s].set_title(ylab + ' vs ' + xlab + "\n" + section_names[s], loc = 'center', fontsize = 13)
     if per_section:
         faxs[s].set_title(ylab + ' vs ' + xlab + "\n" + gain + " " + direction, loc = 'center', fontsize = 13)
     faxs[s].set_ylabel(ylab + " " + unit)
@@ -298,7 +300,11 @@ def plot_scatterplots(vectors, axs, s, pos_color, neg_color, gain, direction, di
         r'$\mathrm{pval}=%.4f$' % (mod.pvalues[1],),
         r'$\mathrm{R2}=%.2f$' % (mod.rsquared,)))
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    faxs[s].text(0.8, 0.95, textstr, transform=faxs[s].transAxes, fontsize=11,
+    xcoord = 0.8
+    ycoord = 0.95
+    if fit[1] > 0:
+        xcoord = 0.05
+    faxs[s].text(xcoord, ycoord, textstr, transform=faxs[s].transAxes, fontsize=11,
             verticalalignment='top', bbox=props)
     faxs[s].scatter(early_points, late_points, c = colors)
 
@@ -342,17 +348,17 @@ def section_scatterplots2(early_late_dict, num_sections, diff, per_section):
                 eye_scatterplot_vectors = eye_condition_dict[(gain, direction)][s]
                 fr_scatterplot_vectors = fr_condition_dict[(gain, direction)][s]
                 plot_scatterplots(eye_scatterplot_vectors, axs_eye, plot_counter, pos_color, neg_color, gain,
-                                  direction, diff, 'eye', per_section)
+                                  direction, diff, 'eye', per_section, s)
                 plot_scatterplots(fr_scatterplot_vectors, axs_fr, plot_counter, pos_color, neg_color, gain, direction,
                                   diff, 'fr', per_section)
                 plot_counter = plot_counter + 1
-        eye_path = "./SectionPlots/Scatterplots/Eye/EarlyVsLate/"
-        fr_path = "./SectionPlots/Scatterplots/FR/EarlyVsLate/"
+        eye_path = "./SectionPlots/Scatterplots/Eye/LateVsEarly/"
+        fr_path = "./SectionPlots/Scatterplots/FR/LateVsEarly/"
         eye_plot_name = 'Eyevel.png'
         fr_plot_name = 'Fr.png'
         if diff:
-            eye_path = "./SectionPlots/Scatterplots/Eye/EarlyVsDiffs/"
-            fr_path = "./SectionPlots/Scatterplots/FR/EarlyVsDiffs/"
+            eye_path = "./SectionPlots/Scatterplots/Eye/DiffsVsEarly/"
+            fr_path = "./SectionPlots/Scatterplots/FR/DiffsVsEarly/"
             eye_plot_name = 'DiffsEyevel.png'
             fr_plot_name = 'DiffsFr.png'
         fig_eye.savefig(eye_path + section_names[s][0:-3] + eye_plot_name, dpi=200)
@@ -403,13 +409,13 @@ def section_scatterplots(early_late_dict, num_sections, diff, per_section):
             for s in range(num_sections):
                 plot_scatterplots(eye_scatterplot_vectors, axs_eye, s, pos_color, neg_color, gain, direction, diff, 'eye', per_section)
                 plot_scatterplots(fr_scatterplot_vectors, axs_fr, s, pos_color, neg_color, gain, direction, diff, 'fr', per_section)
-            eye_path = "./SectionPlots/Scatterplots/Eye/EarlyVsLate/"
-            fr_path = "./SectionPlots/Scatterplots/FR/EarlyVsLate/"
+            eye_path = "./SectionPlots/Scatterplots/Eye/LateVsEarly/"
+            fr_path = "./SectionPlots/Scatterplots/FR/LateVsEarly/"
             eye_plot_name = 'Eyevel.png'
             fr_plot_name = 'Fr.png'
             if diff:
-                eye_path = "./SectionPlots/Scatterplots/Eye/EarlyVsDiffs/"
-                fr_path = "./SectionPlots/Scatterplots/FR/EarlyVsDiffs/"
+                eye_path = "./SectionPlots/Scatterplots/Eye/DiffsVsEarly/"
+                fr_path = "./SectionPlots/Scatterplots/FR/DiffsVsEarly/"
                 eye_plot_name = 'DiffsEyevel.png'
                 fr_plot_name = 'DiffsFr.png'
             fig_eye.savefig(eye_path + gain + direction + eye_plot_name, dpi = 200)
@@ -417,10 +423,10 @@ def section_scatterplots(early_late_dict, num_sections, diff, per_section):
 
 def analyze_sections(early_late_dict, num_sections, num_trials):
     #section_boxplots(early_late_dict, num_sections, num_trials)
-    diff = True
-    #section_scatterplots(early_late_dict, num_sections, diff, False)
-    #section_scatterplots2(early_late_dict, num_sections, diff, True)
+    diff = False
+    section_scatterplots(early_late_dict, num_sections, diff, False)
+    section_scatterplots2(early_late_dict, num_sections, diff, True)
     #section_eye_fr_plots(early_late_dict, num_sections, False)
-    section_eye_fr_plots2(early_late_dict, num_sections, True)
+    #section_eye_fr_plots2(early_late_dict, num_sections, True)
 
 

@@ -21,144 +21,47 @@ def bootstrap(vals, num_iters, siglevel):
     return estimate, lb, ub, std
 
 def get_axis_range(s, gain, direction, type, diff):
-    if diff:
-        if type == 'fr':
-            # if gain == 'x2':
-            #     if direction == 'ipsi':
-            #         if s == 0:
-            #             return range(-40, 41)
-            #         elif s == 1:
-            #             return range(-60, 41)
-            #         elif s == 2:
-            #             return range(-50, 41)
-            #         else:
-            #             return range(-40, 41)
-            #     else:
-            #         if s == 0:
-            #             return range(-40, 41)
-            #         elif s == 1:
-            #             return range(-40, 41)
-            #         elif s == 2:
-            #             return range(-40, 41)
-            #         else:
-            #             return range(-10, 41)
-            return range(-50, 50)
-        else:
-            if gain == 'x2':
-                if direction == 'ipsi':
-                    if s == 0:
-                        return range(-5, 1)
-                    elif s == 1:
-                        return range(-20, -9)
-                    elif s == 2:
-                        return range(-30, -14)
-                    elif s == 3:
-                        return range(-30, -14)
-                else:
-                    if s == 0:
-                        return range(0, 5)
-                    elif s == 1:
-                        return range(10, 21)
-                    elif s == 2:
-                        return range(15, 31)
-                    elif s == 3:
-                        return range(15, 31)
-            else:
-                if direction == 'ipsi':
-                    if s == 0:
-                        return range(-1, 2)
-                    elif s == 1:
-                        return range(-15, -4)
-                    elif s == 2:
-                        return range(-21, -12)
-                    elif s == 3:
-                        return range(-18, -6)
-                else:
-                    if s == 0:
-                        return range(-2, 2)
-                    elif s == 1:
-                        return range(8, 15)
-                    elif s == 2:
-                        return range(12, 24)
-                    elif s == 3:
-                        return range(9, 15)
+    if type == 'fr':
+        return range(-50, 50)
     else:
-        if type == 'fr':
-            if gain == 'x2':
-                if direction == 'ipsi':
-                    if s == 0:
-                        return range(-40, 41)
-                    elif s == 1:
-                        return range(-50, 11)
-                    elif s == 2:
-                        return range(-50, 51)
-                    else:
-                        return range(-50, 21)
-                else:
-                    if s == 0:
-                        return range(-30, 31)
-                    elif s == 1:
-                        return range(-20, 51)
-                    elif s == 2:
-                        return range(-30, 41)
-                    else:
-                        return range(-10, 51)
-            else:
-                if direction == 'ipsi':
-                    if s == 0:
-                        return range(-40, 31)
-                    elif s == 1:
-                        return range(-50, 31)
-                    elif s == 2:
-                        return range(-40, 41)
-                    else:
-                        return range(-40, 41 )
-                else:
-                    if s == 0:
-                        return range(-30, 31)
-                    elif s == 1:
-                        return range(-30, 41)
-                    elif s == 2:
-                        return range(-30, 41)
-                    else:
-                        return range(-40, 31)
-        else:
-            if gain == 'x2':
-                if direction == 'ipsi':
-                    if s == 0:
-                        return range(-5, 1)
-                    elif s == 1:
-                        return range(-20, -10)
-                    elif s == 2:
-                        return range(-29, -16)
-                    elif s == 3:
-                        return range(-28, -15)
-                else:
-                    if s == 0:
-                        return range(0, 5)
-                    elif s == 1:
-                        return range(10, 21)
-                    elif s == 2:
-                        return range(15, 31)
-                    elif s == 3:
-                        return range(15, 31)
-            else:
-                if direction == 'ipsi':
-                    if s == 0:
-                        return range(-2, 2)
-                    elif s == 1:
-                        return range(-10, -5)
-                    elif s == 2:
-                        return range(-21 , -12)
-                    elif s == 3:
-                        return range(-18, -6)
-                else:
-                    if s == 0:
-                        return range(-2, 2)
-                    elif s == 1:
-                        return range(8, 15)
-                    elif s == 2:
-                        return range(12, 24)
-                    elif s == 3:
-                        return range(9, 15)
+        return range(-30, 30)
+    # if gain == 'x2':
+    #     if direction == 'ipsi':
+    #         if s == 0:
+    #             return range(-10, 11)
+    #         elif s == 1:
+    #             return range(-20, -9)
+    #         elif s == 2:
+    #             return range(-30, -14)
+    #         elif s == 3:
+    #             return range(-30, -14)
+    #     else:
+    #         if s == 0:
+    #             return range(-5, 11)
+    #         elif s == 1:
+    #             return range(10, 26)
+    #         elif s == 2:
+    #             return range(15, 31)
+    #         elif s == 3:
+    #             return range(15, 31)
+    # else:
+    #     if direction == 'ipsi':
+    #         if s == 0:
+    #             return range(-5, 11)
+    #         elif s == 1:
+    #             return range(-15, -1)
+    #         elif s == 2:
+    #             return range(-25, -9)
+    #         elif s == 3:
+    #             return range(-20, -4)
+    #     else:
+    #         if s == 0:
+    #             return range(-10, 6)
+    #         elif s == 1:
+    #             return range(5, 21)
+    #         elif s == 2:
+    #             return range(10, 26)
+    #         elif s == 3:
+    #             return range(5, 21)
+
 
