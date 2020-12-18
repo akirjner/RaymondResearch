@@ -3,7 +3,7 @@ from Structures.Objects import SessionInfo
 import pickle
 import dill
 import os
-from collections import defaultdict
+from collections import defaultdict, OrderedDict, namedtuple
 import os.path
 from os import path
 from Kimpo.KimpoPlotting import*
@@ -96,36 +96,49 @@ def create_cell_sessions(session_objs):
             cell_sessions.append(cell_groups[cell][tlength])
     return cell_sessions, cell_groups
 
-
 def create_early_late_dict(sheetinfo, cell_sessions, num_sections, num_bookend_trials):
-    """
-
-    :type num_trials: object
-    """
     if sheetinfo.sheetname == 'Steps' and path.exists("original_evl_dict.pyc"):
         return dill.load(open("original_evl_dict.pyc", "rb"))
     elif sheetinfo.sheetname == 'Steps All' and path.exists("allcells_evl_dict.pyc"):
         return dill.load(open("allcells_evl_dict.pyc", "rb"))
-    early_late_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict())))
-    num_sessions = 0
-    for c, cell_session in enumerate(cell_sessions):
-        if not cell_session[GAINS[0]] or not cell_session[GAINS[1]] or cell_session[GAINS[0]].tlength[1] == 2 or cell_session[GAINS[0]].cell == 'D30-2':
+    early_late_dict = defaultdict(lambda: defaultdict(lambda: defaultdict()))
+    session_check = lambda session: not session[GAINS[0]] or not session[GAINS[1]] or session[GAINS[0]].tlength[1] == 2 or session[GAINS[0]].cell == 'D30-2'
+    sectionedSessions = OrderedDict()
+    for s, session in enumerate(cell_sessions):
+        if session_check(session):
             continue
-        print(c)
-        sectionedSession = SectionedSession(cell_session, num_sections, num_bookend_trials)
-        name = sectionedSession.cellName
-        length = sectionedSession.trialLength
-        early_late_dict[name][length]['x2']['ipsi'] = sectionedSession.conditions.gainUpIpsi
-        early_late_dict[name][length]['x2']['contra'] = sectionedSession.conditions.gainUpContra
-        early_late_dict[name][length]['x0']['ipsi'] = sectionedSession.conditions.gainDownIpsi
-        early_late_dict[name][length]['x0']['contra'] = sectionedSession.conditions.gainDownContra
-        num_sessions = num_sessions + 1
-    early_late_dict['num_sessions'] = num_sessions
+        print(s)
+        identifier = session[GAINS[0]].cell.replace("-", "_") + "__" + session[GAINS[0]].tlength[0].replace(" ", "")
+        sectionedSessions[identifier] = SectionedSession(session, num_sections, num_bookend_trials)
+    Condition = namedtuple('Condition', sectionedSessions.keys())
+    early_late_dict['num_sessions'] = len(sectionedSessions.keys())
+    for gain in GAINS:
+        for direction in DIRECTIONS:
+            for s in range(num_sections):
+                early_eye_list = []
+                late_eye_list = []
+                early_fr_list = []
+                late_fr_list = []
+                for sect_sess in sectionedSessions.values():
+                    c = sect_sess.conditions[(gain, direction)][s]
+                    early_eye_list.append(c.earlyEyevelMean)
+                    late_eye_list.append(c.lateEyevelMean)
+                    early_fr_list.append(c.earlyFrMean)
+                    late_fr_list.append(c.lateFrMean)
+                early_eye_cond = Condition._make(early_eye_list)
+                late_eye_cond = Condition._make(late_eye_list)
+                early_fr_cond = Condition._make(early_fr_list)
+                late_fr_cond = Condition._make(late_fr_list)
+                early_late_dict['eye'][(gain, direction, s)]['early'] = early_eye_cond
+                early_late_dict['eye'][(gain, direction, s)]['late'] = late_eye_cond
+                early_late_dict['fr'][(gain, direction, s)]['early'] = early_fr_cond
+                early_late_dict['fr'][(gain, direction, s)]['late'] = late_fr_cond
     if sheetinfo.sheetname == 'Steps':
         dill.dump(early_late_dict, open("original_evl_dict.pyc", "wb"))
     else:
         dill.dump(early_late_dict, open("allcells_evl_dict.pyc", "wb"))
     return early_late_dict
+
 
 if __name__ == "__main__":
     sheetinfo, sessionmap = process_call()

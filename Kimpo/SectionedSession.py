@@ -11,9 +11,8 @@ class SectionedSession:
         self.num_bookend_trials = num_bookend_trials
         self.cellName = cell_session[GAINS[0]].cell
         self.trialLength = cell_session[GAINS[0]].tlength[0]
-        Conditions = namedtuple('Conditions', ['gainUpIpsi', 'gainUpContra', 'gainDownIpsi', 'gainDownContra'])
-        self.conditions = Conditions(self.get_sections('x2', 'ipsi'), self.get_sections('x2', 'contra'),
-                                     self.get_sections('x0', 'ipsi'), self.get_sections('x0', 'contra'))
+        self.conditions = {('x2', 'ipsi') : self.get_sections('x2', 'ipsi'), ('x2', 'contra') : self.get_sections('x2', 'contra'),
+                           ('x0', 'ipsi') : self.get_sections('x0', 'ipsi'), ('x0', 'contra') : self.get_sections('x0', 'contra')}
 
     def get_sections(self, gain, direction):
         gain_session = self.session[gain]

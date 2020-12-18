@@ -155,21 +155,18 @@ def section_boxplots(early_late_dict, num_sections, num_trials):
             fig_eye.savefig("./SectionPlots/Boxplots/" + gain + direction + "EyevelBoxplots.png", dpi = 200)
             fig_fr.savefig("./SectionPlots/Boxplots/" + gain + direction + "FrBoxplots.png", dpi = 200)
 
-
-
-
-
-
-def plot_eye_vs_fr(eye_vectors, fr_vectors, s, axs, pos_color, neg_color, gain, direction, per_section):
+def plot_eye_vs_fr(eye_data, fr_data, axs, gds, title, pc):
+    pos_color = 'red'
+    neg_color = 'darkgreen'
+    if (gds[0] == 'x2' and gds[1] == 'contra') or (gds[0] == 'x0' and gds[1] == 'ipsi'):
+        pos_color = 'darkgreen'
+        neg_color = 'red'
     faxs = axs.ravel()
-    faxs[s].grid(True)
-    faxs[s].yaxis.set_ticks_position('left')
-    faxs[s].yaxis.set_tick_params(labelsize=8.5)
-    eye_diffs = eye_vectors[1,:] - eye_vectors[0,:]
-    fr_diffs = fr_vectors[0,:] - fr_vectors[1,:]
-    if not per_section:
-        eye_diffs = eye_vectors[s,0,:] - eye_vectors[s,1,:]
-        fr_diffs = fr_vectors[s,0,:] - fr_vectors[s,1,:]
+    faxs[pc].grid(True)
+    faxs[pc].yaxis.set_ticks_position('left')
+    faxs[pc].yaxis.set_tick_params(labelsize=8.5)
+    eye_diffs = np.subtract(np.array(tuple(eye_data['late'])),np.array(tuple(eye_data['early'])))
+    fr_diffs = np.subtract(np.array(tuple(fr_data['late'])), np.array(tuple(fr_data['early'])))
     diffs_min1, diffs_min2 = np.argpartition(eye_diffs, 1)[0:2]
     diffs_max = np.argmax(eye_diffs)
     eye_diffs = np.delete(eye_diffs, np.array((diffs_min1, diffs_min2, diffs_max)))
@@ -180,70 +177,53 @@ def plot_eye_vs_fr(eye_vectors, fr_vectors, s, axs, pos_color, neg_color, gain, 
 
     x1 = np.arange(0, 5)
     x3 = np.arange(-5, 1)
-    faxs[s].fill_between(x1, 0, 50, color=pos_color, alpha=0.3)
-    faxs[s].fill_between(x3, -50, 0, color=neg_color, alpha=0.3)
-    faxs[s].set_xlim([-4, 4])
-    faxs[s].set_xlabel(xlab)
-    faxs[s].set_ylabel(ylab)
-    faxs[s].set_ylim([-50, 50])
-    faxs[s].plot(range(-100, 100), [0]*200, color = 'k', linewidth = 1.25)
-    faxs[s].plot([0]*200, range(-100, 100), color = 'k', linewidth = 1.25)
+    faxs[pc].fill_between(x1, 0, 50, color=pos_color, alpha=0.3)
+    faxs[pc].fill_between(x3, -50, 0, color=neg_color, alpha=0.3)
+    faxs[pc].set_xlim([-4, 4])
+    faxs[pc].set_xlabel(xlab)
+    faxs[pc].set_ylabel(ylab)
+    faxs[pc].set_ylim([-50, 50])
+    faxs[pc].plot(range(-100, 100), [0]*200, color = 'k', linewidth = 1.25)
+    faxs[pc].plot([0]*200, range(-100, 100), color = 'k', linewidth = 1.25)
 
-    faxs[s].scatter(eye_diffs, fr_diffs, color = 'k')
+    faxs[pc].scatter(eye_diffs, fr_diffs, color = 'k')
     fit, fit_line, mod = bestfit(eye_diffs, fr_diffs)
-    faxs[s].plot(fit_line[0], fit_line[1])
+    faxs[pc].plot(fit_line[0], fit_line[1])
     textstr = '\n'.join((
         r'$\mathrm{slope}=%.2f$' % (fit[1],),
         r'$\mathrm{pval}=%.4f$' % (mod.pvalues[1],),
         r'$\mathrm{R2}=%.2f$' % (mod.rsquared,)))
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    faxs[s].text(0.8, 0.95, textstr, transform=faxs[s].transAxes, fontsize=11,
+    faxs[pc].text(0.8, 0.95, textstr, transform=faxs[pc].transAxes, fontsize=11,
                  verticalalignment='top', bbox=props)
-    faxs[s].set_title(ylab + ' vs ' + xlab + "\n" + section_names[s], loc = 'center')
-    if per_section:
-        faxs[s].set_title(ylab + ' vs ' + xlab + "\n" + gain + " " + direction, loc = 'center')
+    faxs[pc].set_title(ylab + ' vs ' + xlab + "\n" + title, loc = 'center')
 
-def section_eye_fr_plots2(early_late_dict, num_sections, per_section):
-    num_sessions = early_late_dict['num_sessions']
-    cells = [key for key in early_late_dict.keys() if key != 'num_sessions']
-    eye_conditions, fr_conditions = get_condition_dicts(cells, early_late_dict, num_sections, num_sessions)
+def section_eye_fr_plots(early_late_dict, num_sections):
+    plot_name = 'EyeVsFr.png'
+    for gain in GAINS:
+        for direction in DIRECTIONS:
+            fig, axs = plt.subplots(2, 2, tight_layout=True, figsize=(15, 10))
+            fig.suptitle(gain + " " + direction, fontsize = 16)
+            pc = 0
+            for s in range(num_sections):
+                gds = (gain, direction, s)
+                eye_data = early_late_dict['eye'][gds]
+                fr_data = early_late_dict['fr'][gds]
+                plot_eye_vs_fr(eye_data, fr_data, axs, gds, section_names[s], pc)
+                pc = pc + 1
+            fig.savefig("./SectionPlots/EyeVsFrPlots/" + gain + direction + plot_name, dpi=200)
     for s in range(num_sections):
         fig, axs = plt.subplots(2, 2, tight_layout=True, figsize=(15, 10))
         fig.suptitle(section_names[s], fontsize=16)
         pc = 0
         for gain in GAINS:
             for direction in DIRECTIONS:
-                pos_color = 'red'
-                neg_color = 'darkgreen'
-                if (gain == 'x2' and direction == 'contra') or (gain == 'x0' and direction == 'ipsi'):
-                    pos_color = 'darkgreen'
-                    neg_color = 'red'
-                eye_vectors = eye_conditions[(gain, direction)][s]
-                fr_vectors = fr_conditions[(gain, direction)][s]
-                plot_eye_vs_fr(eye_vectors, fr_vectors, pc, axs, pos_color, neg_color, gain, direction, per_section)
+                gds = (gain, direction, s)
+                eye_data = early_late_dict['eye'][gds]
+                fr_data = early_late_dict['fr'][gds]
+                plot_eye_vs_fr(eye_data, fr_data, axs, gds, gain + " " + direction, pc)
                 pc = pc + 1
-        plot_name = 'EyeVsFr.png'
         fig.savefig("./SectionPlots/EyeVsFrPlots/" + section_names[s][0:-3] + plot_name, dpi=200)
-
-def section_eye_fr_plots(early_late_dict, num_sections, per_section):
-    num_sessions = early_late_dict['num_sessions']
-    cells = [key for key in early_late_dict.keys() if key != 'num_sessions']
-    eye_conditions, fr_conditions = get_condition_dicts(cells, early_late_dict, num_sections, num_sessions)
-    for gain in GAINS:
-        for direction in DIRECTIONS:
-            pos_color = 'red'
-            neg_color = 'darkgreen'
-            if (gain == 'x2' and direction == 'contra') or (gain == 'x0' and direction == 'ipsi'):
-                pos_color = 'darkgreen'
-                neg_color = 'red'
-            eye_vectors = eye_conditions[(gain, direction)]
-            fr_vectors = fr_conditions[(gain, direction)]
-            fig, axs = plt.subplots(2, 2, tight_layout=True, figsize=(15, 10))
-            fig.suptitle(gain + " " + direction, fontsize = 16)
-            for s in range(num_sections):
-                plot_eye_vs_fr(eye_vectors, fr_vectors, s, axs, pos_color, neg_color, gain, direction, per_section)
-            plot_name = 'EyeVsFr.png'
-            fig.savefig("./SectionPlots/EyeVsFrPlots/" + gain + direction + plot_name, dpi=200)
 
 def get_colors(early_points, late_points, pos_color, neg_color, diff):
     colors = []
@@ -260,40 +240,32 @@ def get_colors(early_points, late_points, pos_color, neg_color, diff):
                 colors.append(pos_color)
     return colors
 
-def plot_scatterplots(vectors, axs, s, pos_color, neg_color, gain, direction, diff, type, per_section, pc = None):
+def plot_panel(data, axs, gds, diff, type, title, pc):
+    pos_color = 'red'
+    neg_color = 'darkgreen'
+    if (gds[0] == 'x2' and gds[1] == 'contra') or (gds[0] == 'x0' and gds[1] == 'ipsi'):
+        pos_color = 'darkgreen'
+        neg_color = 'red'
     faxs = axs.ravel()
-    early_points = vectors[0,:]
-    late_points = vectors[1,:]
-    if not per_section:
-        early_points = vectors[s, 0,:]
-        late_points = vectors[s, 1,:]
-    ylab = 'Late Firing Rate'
-    xlab = 'Early Firing Rate'
-    unit = '(sp/s)'
+    early_points = np.array(tuple(data['early']))
+    late_points = np.array(tuple(data['late']))
+    xlab = 'Early Eye Velocity' if type == 'eye' else 'Early Firing Rate'
+    ylab = 'Late Eye Velocity' if type == 'eye' else 'Late Firing Rate'
+    unit = '(deg/s)' if type == 'eye' else '(sp/s)'
     if type == 'eye':
-        unit = '(deg/s)'
         eye_min1, eye_min2 = np.argpartition(early_points, 1)[0:2]
         eye_max = np.argmax(early_points)
         early_points = np.delete(early_points, np.array((eye_min1, eye_min2, eye_max)))
         late_points = np.delete(late_points, np.array((eye_min1, eye_min2, eye_max)))
-        xlab = 'Early Eye Velocity'
-        ylab = 'Late Eye Velocity'
     if diff:
         late_points = late_points - early_points
-        if type == 'eye':
-            ylab = 'Change in Eye Velocity'
-        else:
-            ylab = 'Change in Firing Rate'
+        ylab = ylab.replace('Early ', 'Change in ')
     colors = get_colors(early_points, late_points, pos_color, neg_color, diff)
-    axis_range = get_axis_range(s, gain, direction, type, diff)
-    if per_section and pc:
-        axis_range = get_axis_range(pc, gain, direction, type, diff)
-    faxs[s].grid(True)
-    faxs[s].set_title(ylab + ' vs ' + xlab + "\n" + section_names[s], loc = 'center', fontsize = 13)
-    if per_section:
-        faxs[s].set_title(ylab + ' vs ' + xlab + "\n" + gain + " " + direction, loc = 'center', fontsize = 13)
-    faxs[s].set_ylabel(ylab + " " + unit)
-    faxs[s].set_xlabel(xlab + ' ' + unit)
+    axis_range = get_axis_range(type)
+    faxs[pc].grid(True)
+    faxs[pc].set_title(ylab + ' vs ' + xlab + "\n" + title, loc = 'center', fontsize = 13)
+    faxs[pc].set_ylabel(ylab + " " + unit)
+    faxs[pc].set_xlabel(xlab + ' ' + unit)
     fit,fit_line,mod = bestfit(early_points, late_points)
     textstr = '\n'.join((
         r'$\mathrm{slope}=%.2f$' % (fit[1],),
@@ -304,129 +276,71 @@ def plot_scatterplots(vectors, axs, s, pos_color, neg_color, gain, direction, di
     ycoord = 0.95
     if fit[1] > 0:
         xcoord = 0.05
-    faxs[s].text(xcoord, ycoord, textstr, transform=faxs[s].transAxes, fontsize=11,
+    faxs[pc].text(xcoord, ycoord, textstr, transform=faxs[pc].transAxes, fontsize=11,
             verticalalignment='top', bbox=props)
-    faxs[s].scatter(early_points, late_points, c = colors)
-
-    faxs[s].plot(fit_line[0], fit_line[1])
-    faxs[s].plot(range(-100, 100), [0]*200, color = 'k', linewidth = 1.25)
-    faxs[s].plot([0]*200, range(-100, 100), color = 'k', linewidth = 1.25)
-    faxs[s].set_xlim([axis_range[0], axis_range[-1]])
+    faxs[pc].scatter(early_points, late_points, c = colors)
+    faxs[pc].plot(fit_line[0], fit_line[1])
+    faxs[pc].plot(range(-100, 100), [0]*200, color = 'k', linewidth = 1.25)
+    faxs[pc].plot([0]*200, range(-100, 100), color = 'k', linewidth = 1.25)
+    faxs[pc].set_xlim([axis_range[0], axis_range[-1]])
     if diff and type == 'eye':
-        faxs[s].set_ylim([-5, 5])
+        faxs[pc].set_ylim([-5, 5])
     else:
-        faxs[s].set_ylim([axis_range[0], axis_range[-1]])
+        faxs[pc].set_ylim([axis_range[0], axis_range[-1]])
     if not diff:
-        faxs[s].plot(early_points, early_points, c = 'k', linestyle = 'dotted')
+        xpoints = ypoints = faxs[pc].get_xlim()
+        faxs[pc].plot(xpoints, ypoints, linestyle='--', color='k', lw=3, scalex=False, scaley=False)
 
-class BidirectionalDict(dict):
-    def __setitem__(self, key, val):
-        dict.__setitem__(self, key, val)
-        dict.__setitem__(self, val, key)
-
-    def __delitem__(self, key):
-        dict.__delitem__(self, self[key])
-        dict.__delitem__(self, key)
-
-def section_scatterplots2(early_late_dict, num_sections, diff, per_section):
-    num_sessions = early_late_dict['num_sessions']
-    cells = [key for key in early_late_dict.keys() if key != 'num_sessions']
-    eye_condition_dict, fr_condition_dict = get_condition_dicts(cells, early_late_dict, num_sections, num_sessions)
+def section_scatterplots(early_late_dict, num_sections, diff):
+    eye_path = "./SectionPlots/Scatterplots/Eye/LateVsEarly/"
+    fr_path = "./SectionPlots/Scatterplots/FR/LateVsEarly/"
+    eye_plot_name = 'Eyevel.png'
+    fr_plot_name = 'Fr.png'
+    if diff:
+        eye_path = "./SectionPlots/Scatterplots/Eye/DiffsVsEarly/"
+        fr_path = "./SectionPlots/Scatterplots/FR/DiffsVsEarly/"
+        eye_plot_name = 'DiffsEyevel.png'
+        fr_plot_name = 'DiffsFr.png'
+    for gain in GAINS:
+        for direction in DIRECTIONS:
+            fig_eye_cond, axs_eye_cond = plt.subplots(2, 2, tight_layout=True, figsize = (15, 10))
+            fig_eye_cond.suptitle(gain + " " + direction, fontsize = 16)
+            fig_fr_cond, axs_fr_cond = plt.subplots(2, 2, tight_layout=True, figsize = (15, 10))
+            fig_fr_cond.suptitle(gain + " " + direction, fontsize = 16)
+            pc = 0
+            for s in range(num_sections):
+                gds = (gain, direction, s)
+                eye_data = early_late_dict['eye'][gds]
+                fr_data = early_late_dict['fr'][gds]
+                plot_panel(eye_data, axs_eye_cond, gds, diff, 'eye', section_names[s], pc)
+                plot_panel(fr_data, axs_fr_cond, gds, diff, 'fr', section_names[s], pc)
+                pc = pc + 1
+            fig_eye_cond.savefig(eye_path + gain + direction + eye_plot_name, dpi = 200)
+            fig_fr_cond.savefig(fr_path + gain + direction + fr_plot_name, dpi = 200)
     for s in range(num_sections):
-        fig_eye, axs_eye = plt.subplots(2, 2, tight_layout=True, figsize=(15, 10))
-        fig_eye.suptitle(section_names[s], fontsize=16)
-        fig_fr, axs_fr = plt.subplots(2, 2, tight_layout=True, figsize=(15, 10))
-        fig_fr.suptitle(section_names[s], fontsize=16)
-        plot_counter = 0
+        fig_eye_sec, axs_eye_sec = plt.subplots(2, 2, tight_layout=True, figsize=(15, 10))
+        fig_eye_sec.suptitle(section_names[s], fontsize=16)
+        fig_fr_sec, axs_fr_sec = plt.subplots(2, 2, tight_layout=True, figsize=(15, 10))
+        fig_fr_sec.suptitle(section_names[s], fontsize=16)
+        pc = 0
         for gain in GAINS:
             for direction in DIRECTIONS:
-                pos_color = 'red'
-                neg_color = 'darkgreen'
-                if (gain == 'x2' and direction == 'contra') or (gain == 'x0' and direction == 'ipsi'):
-                    pos_color = 'darkgreen'
-                    neg_color = 'red'
-                eye_scatterplot_vectors = eye_condition_dict[(gain, direction)][s]
-                fr_scatterplot_vectors = fr_condition_dict[(gain, direction)][s]
-                plot_scatterplots(eye_scatterplot_vectors, axs_eye, plot_counter, pos_color, neg_color, gain,
-                                  direction, diff, 'eye', per_section, s)
-                plot_scatterplots(fr_scatterplot_vectors, axs_fr, plot_counter, pos_color, neg_color, gain, direction,
-                                  diff, 'fr', per_section)
-                plot_counter = plot_counter + 1
-        eye_path = "./SectionPlots/Scatterplots/Eye/LateVsEarly/"
-        fr_path = "./SectionPlots/Scatterplots/FR/LateVsEarly/"
-        eye_plot_name = 'Eyevel.png'
-        fr_plot_name = 'Fr.png'
-        if diff:
-            eye_path = "./SectionPlots/Scatterplots/Eye/DiffsVsEarly/"
-            fr_path = "./SectionPlots/Scatterplots/FR/DiffsVsEarly/"
-            eye_plot_name = 'DiffsEyevel.png'
-            fr_plot_name = 'DiffsFr.png'
-        fig_eye.savefig(eye_path + section_names[s][0:-3] + eye_plot_name, dpi=200)
-        fig_fr.savefig(fr_path + section_names[s][0:-3] + fr_plot_name, dpi=200)
+                gds = (gain, direction, s)
+                eye_data = early_late_dict['eye'][gds]
+                fr_data = early_late_dict['fr'][gds]
+                plot_panel(eye_data, axs_eye_sec, gds, diff, 'eye', gain + " " + direction, pc)
+                plot_panel(fr_data, axs_fr_sec, gds, diff, 'fr', gain + " " + direction, pc)
+                pc = pc + 1
+        fig_eye_sec.savefig(eye_path + section_names[s][0:-3] + eye_plot_name, dpi=200)
+        fig_fr_sec.savefig(fr_path + section_names[s][0:-3] + fr_plot_name, dpi=200)
+    #plt.show()
 
-
-def get_condition_dicts(cells, early_late_dict, num_sections, num_sessions):
-    eye_condition_dict = {}
-    fr_condition_dict = {}
-    for gain in GAINS:
-        for direction in DIRECTIONS:
-            eye_vectors = np.zeros((num_sections, 2, num_sessions))
-            fr_vectors = np.zeros((num_sections, 2, num_sessions))
-            session_counter = 0
-            for cell in cells:
-                tlengths = early_late_dict[cell].keys()
-                for tlength in tlengths:
-                    condition = early_late_dict[cell][tlength][gain][direction]
-                    for s in range(num_sections):
-                        condition_section = condition[s]
-                        eye_vectors[s, :, session_counter] = np.array(
-                            (condition_section.earlyEyevelMean, condition_section.lateEyevelMean))
-                        fr_vectors[s, :, session_counter] = np.array(
-                            (condition_section.earlyFrMean, condition_section.lateFrMean))
-                    session_counter = session_counter + 1
-            eye_condition_dict[(gain, direction)] = eye_vectors
-            fr_condition_dict[(gain, direction)] = fr_vectors
-    return eye_condition_dict, fr_condition_dict
-
-
-def section_scatterplots(early_late_dict, num_sections, diff, per_section):
-    num_sessions = early_late_dict['num_sessions']
-    cells = [key for key in early_late_dict.keys() if key != 'num_sessions']
-    eye_condition_dict, fr_condition_dict = get_condition_dicts(cells, early_late_dict, num_sections, num_sessions)
-    for gain in GAINS:
-        for direction in DIRECTIONS:
-            pos_color = 'red'
-            neg_color = 'darkgreen'
-            if (gain == 'x2' and direction == 'contra') or (gain == 'x0' and direction == 'ipsi'):
-                pos_color = 'darkgreen'
-                neg_color = 'red'
-            eye_scatterplot_vectors = eye_condition_dict[(gain, direction)]
-            fr_scatterplot_vectors = fr_condition_dict[(gain, direction)]
-            fig_eye, axs_eye = plt.subplots(2, 2, tight_layout=True, figsize = (15, 10))
-            fig_eye.suptitle(gain + " " + direction, fontsize = 16)
-            fig_fr, axs_fr = plt.subplots(2, 2, tight_layout=True, figsize = (15, 10))
-            fig_fr.suptitle(gain + " " + direction, fontsize = 16)
-            for s in range(num_sections):
-                plot_scatterplots(eye_scatterplot_vectors, axs_eye, s, pos_color, neg_color, gain, direction, diff, 'eye', per_section)
-                plot_scatterplots(fr_scatterplot_vectors, axs_fr, s, pos_color, neg_color, gain, direction, diff, 'fr', per_section)
-            eye_path = "./SectionPlots/Scatterplots/Eye/LateVsEarly/"
-            fr_path = "./SectionPlots/Scatterplots/FR/LateVsEarly/"
-            eye_plot_name = 'Eyevel.png'
-            fr_plot_name = 'Fr.png'
-            if diff:
-                eye_path = "./SectionPlots/Scatterplots/Eye/DiffsVsEarly/"
-                fr_path = "./SectionPlots/Scatterplots/FR/DiffsVsEarly/"
-                eye_plot_name = 'DiffsEyevel.png'
-                fr_plot_name = 'DiffsFr.png'
-            fig_eye.savefig(eye_path + gain + direction + eye_plot_name, dpi = 200)
-            fig_fr.savefig(fr_path + gain + direction + fr_plot_name, dpi = 200)
 
 def analyze_sections(early_late_dict, num_sections, num_trials):
     #section_boxplots(early_late_dict, num_sections, num_trials)
     diff = False
-    section_scatterplots(early_late_dict, num_sections, diff, False)
-    section_scatterplots2(early_late_dict, num_sections, diff, True)
-    #section_eye_fr_plots(early_late_dict, num_sections, False)
-    #section_eye_fr_plots2(early_late_dict, num_sections, True)
+    section_scatterplots(early_late_dict, num_sections, diff)
+    section_eye_fr_plots(early_late_dict, num_sections)
+
 
 
